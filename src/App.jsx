@@ -13,6 +13,7 @@ export const TEMPLATE_SIZES = {
   instagramStory: { id: 'instagramStory', name: 'Instagram Story (322x572)', width: 322, height: 572 },
   facebookCover: { id: 'facebookCover', name: 'Facebook Cover (851x315)', width: 851, height: 315 },
   facebookPost: { id: 'facebookPost', name: 'Facebook Post (760x400)', width: 760, height: 400 },
+  facebookPostLandscape: { id: 'facebookPostLandscape', name: 'Facebook Post Landscape (1200x630)', width: 1200, height: 630 },
   facebookStory: { id: 'facebookStory', name: 'Facebook Story (322x572)', width: 322, height: 572 },
   xCover: { id: 'xCover', name: 'X Cover (900x300)', width: 900, height: 300 },
   youtubeThumbnail: { id: 'youtubeThumbnail', name: 'YouTube Thumbnail (700x400)', width: 700, height: 400 },
