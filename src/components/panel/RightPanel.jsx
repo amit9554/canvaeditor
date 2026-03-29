@@ -16,6 +16,41 @@ const transformTextCase = (text, mode) => {
   return value;
 };
 
+const TEXT_PRESETS = {
+  h2: {
+    fontSize: 56,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Montserrat', sans-serif",
+    lineHeight: 1.05,
+    letterSpacing: -1,
+  },
+  h3: {
+    fontSize: 42,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Montserrat', sans-serif",
+    lineHeight: 1.1,
+    letterSpacing: -0.6,
+  },
+  h4: {
+    fontSize: 30,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Open Sans', sans-serif",
+    lineHeight: 1.15,
+    letterSpacing: -0.2,
+  },
+  paragraph: {
+    fontSize: 18,
+    isBold: false,
+    isItalic: false,
+    fontFamily: "'Open Sans', sans-serif",
+    lineHeight: 1.5,
+    letterSpacing: 0,
+  },
+};
+
 export default function RightPanel({ selectedElement, onChange, onLayerChange, onDelete, onDuplicate, backgroundImage, onBackgroundImageChange }) {
   const elementImageInputRef = useRef(null);
 
@@ -137,6 +172,16 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
     });
   };
 
+  const handleTextPreset = (presetKey) => {
+    const preset = TEXT_PRESETS[presetKey];
+    if (!preset) return;
+
+    onChange({
+      ...selectedElement,
+      ...preset,
+    });
+  };
+
   return (
     <div className="w-72 bg-white border-l flex flex-col shadow-sm shrink-0 z-10 h-full overflow-y-auto">
       <div className="p-4 border-b sticky top-0 bg-white z-20">
@@ -222,6 +267,16 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
                  <button onClick={() => handleAssign('align', 'left')} className={`p-1.5 rounded flex-1 flex justify-center transition-all ${(!selectedElement.align || selectedElement.align === 'left') ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800'}`}><AlignLeft size={16} /></button>
                  <button onClick={() => handleAssign('align', 'center')} className={`p-1.5 rounded flex-1 flex justify-center transition-all ${(selectedElement.align === 'center') ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800'}`}><AlignCenter size={16} /></button>
                  <button onClick={() => handleAssign('align', 'right')} className={`p-1.5 rounded flex-1 flex justify-center transition-all ${(selectedElement.align === 'right') ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800'}`}><AlignRight size={16} /></button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Text Presets</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => handleTextPreset('h2')} className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">H2 Heading</button>
+                <button onClick={() => handleTextPreset('h3')} className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">H3 Heading</button>
+                <button onClick={() => handleTextPreset('h4')} className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">H4 Heading</button>
+                <button onClick={() => handleTextPreset('paragraph')} className="rounded-md border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50">Paragraph</button>
               </div>
             </div>
 

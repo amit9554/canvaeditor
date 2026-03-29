@@ -19,6 +19,41 @@ const transformTextCase = (text, mode) => {
   return value;
 };
 
+const TEXT_PRESETS = {
+  h2: {
+    fontSize: 56,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Montserrat', sans-serif",
+    lineHeight: 1.05,
+    letterSpacing: -1,
+  },
+  h3: {
+    fontSize: 42,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Montserrat', sans-serif",
+    lineHeight: 1.1,
+    letterSpacing: -0.6,
+  },
+  h4: {
+    fontSize: 30,
+    isBold: true,
+    isItalic: false,
+    fontFamily: "'Open Sans', sans-serif",
+    lineHeight: 1.15,
+    letterSpacing: -0.2,
+  },
+  paragraph: {
+    fontSize: 18,
+    isBold: false,
+    isItalic: false,
+    fontFamily: "'Open Sans', sans-serif",
+    lineHeight: 1.5,
+    letterSpacing: 0,
+  },
+};
+
 export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDelete, onDuplicate }) => {
   const shapeRef = useRef();
   const trRef = useRef();
@@ -107,10 +142,11 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
 
       const stageWidth = stage.width() / (stage.scaleX() || 1);
       const centeredX = box.x + box.width / 2;
-      const topY = Math.max(16, box.y - 18);
+      const topY = box.y - 28;
+      const sidePadding = Math.max(40, Math.min(180, (stageWidth / 2) - 24));
 
       setToolbarPosition({
-        x: Math.max(80, Math.min(stageWidth - 80, centeredX)),
+        x: Math.max(sidePadding, Math.min(stageWidth - sidePadding, centeredX)),
         y: topY,
       });
     };
@@ -197,7 +233,8 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
         textareaRef.current.focus();
         textareaRef.current.style.height = 'auto';
         textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        textareaRef.current.setSelectionRange(textareaRef.current.value.length, textareaRef.current.value.length);
+        const end = textareaRef.current.value.length;
+        textareaRef.current.setSelectionRange(end, end);
       }
     });
     return () => window.cancelAnimationFrame(rafId);
@@ -228,6 +265,15 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     onChange({
       ...shapeProps,
       fontSize: Math.max(8, (shapeProps.fontSize || 16) + delta),
+    });
+  };
+
+  const applyTextPreset = (presetKey) => {
+    const preset = TEXT_PRESETS[presetKey];
+    if (!preset) return;
+    onChange({
+      ...shapeProps,
+      ...preset,
     });
   };
 
@@ -535,7 +581,7 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
       {shapeProps.type === 'text' && (
          <Text 
            {...commonProps} 
-           text={shapeProps.text} 
+           text={isEditingText ? draftText : shapeProps.text} 
            fontSize={shapeProps.fontSize} 
            fontFamily={shapeProps.fontFamily} 
            fill={shapeProps.fill} 
@@ -544,7 +590,6 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
            opacity={shapeProps.opacity ?? 1}
            stroke={shapeProps.strokeColor}
            strokeWidth={shapeProps.strokeWidth || 0}
-           visible={!isEditingText}
            onDblClick={startInlineEditing}
            onDblTap={startInlineEditing}
            {...shadowProps}
@@ -585,9 +630,9 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
             y: toolbarPosition.y,
           }}
         >
-          <div className="pointer-events-auto min-w-max -translate-x-1/2 -translate-y-full rounded-2xl border border-slate-200 bg-white/95 p-2 shadow-2xl backdrop-blur">
+          <div className="pointer-events-auto z-[60] w-[34rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-full rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
              {shapeProps.type === 'text' && (
-                <div className="mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-2">
+                <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2">
                   <select 
                     className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs focus:outline-none w-24 cursor-pointer"
                     value={shapeProps.fontFamily || 'Arial'}
@@ -626,9 +671,13 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
                 </div>
              )}
 
-             <div className="flex items-center gap-1.5">
+             <div className="flex flex-wrap items-center gap-1.5">
                {shapeProps.type === 'text' && (
                   <>
+                    <button onClick={() => applyTextPreset('h2')} title="Heading 2" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H2</button>
+                    <button onClick={() => applyTextPreset('h3')} title="Heading 3" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H3</button>
+                    <button onClick={() => applyTextPreset('h4')} title="Heading 4" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H4</button>
+                    <button onClick={() => applyTextPreset('paragraph')} title="Paragraph" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">P</button>
                     <button onClick={() => updateTextCase('upper')} title="UPPERCASE" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">TT</button>
                     <button onClick={() => updateTextCase('lower')} title="lowercase" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">tt</button>
                     <button onClick={() => updateTextCase('title')} title="Title Case" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">Tt</button>
@@ -693,7 +742,14 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
                 finishInlineEditing(true);
               }
             }}
-            className="resize-none overflow-hidden rounded-lg border border-sky-300 bg-white/95 px-2 py-1 shadow-xl outline-none"
+            onFocus={(e) => {
+              const end = e.target.value.length;
+              e.target.setSelectionRange(end, end);
+            }}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            className="resize-none overflow-hidden bg-transparent px-0 py-0 outline-none selection:bg-transparent selection:text-transparent"
             style={{
               width: `${Math.max(120, shapeProps.width || 180)}px`,
               minHeight: `${Math.max(48, shapeProps.height || (shapeProps.fontSize || 20) + 16)}px`,
@@ -701,12 +757,17 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
               fontFamily: shapeProps.fontFamily || 'Arial',
               fontWeight: shapeProps.isBold ? '700' : '400',
               fontStyle: shapeProps.isItalic ? 'italic' : 'normal',
-              color: shapeProps.fill || '#000000',
+              color: 'transparent',
+              caretColor: shapeProps.fill || '#000000',
               lineHeight: '1.2',
               textAlign: shapeProps.align || 'left',
               transform: `rotate(${shapeProps.rotation || 0}deg)`,
               transformOrigin: 'top left',
               whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+              border: 'none',
+              background: 'transparent',
+              boxShadow: 'none',
             }}
           />
         </Html>

@@ -74,7 +74,7 @@ export default function EditorCanvas({
   };
 
   // Determine scaling so template fits in container
-  const PADDING = 80; // 40px all around
+  const PADDING = 140;
   const scaleX = Math.max(0.1, (containerSize.width - PADDING) / templateSize.width);
   const scaleY = Math.max(0.1, (containerSize.height - PADDING) / templateSize.height);
   const scale = Math.min(scaleX, scaleY, 1); // Avoid zooming IN beyond 100% usually, or allow it? Let's allow up to 2x or 1x.
@@ -86,7 +86,7 @@ export default function EditorCanvas({
   
   return (
     <div 
-      className="flex-1 w-full h-full relative overflow-y-auto overflow-x-hidden bg-gray-200 flex items-center justify-center"
+      className="flex-1 w-full h-full relative overflow-auto bg-gray-200 flex items-start justify-center px-8 pt-24 pb-16"
       onKeyDown={(e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
            if(onDelete) {
@@ -101,7 +101,7 @@ export default function EditorCanvas({
       ref={containerRef}
     >
       <div 
-        className="bg-white shadow-xl overflow-hidden" 
+        className="relative z-10 bg-white shadow-xl overflow-visible" 
         style={{ 
           width: stageWidth, 
           height: stageHeight,
