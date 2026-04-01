@@ -51,6 +51,45 @@ const TEXT_PRESETS = {
   },
 };
 
+const FONT_GROUPS = [
+  {
+    label: 'Modern Sans',
+    fonts: [
+      { label: 'Poppins', value: "'Poppins', sans-serif" },
+      { label: 'Montserrat', value: "'Montserrat', sans-serif" },
+      { label: 'Space Grotesk', value: "'Space Grotesk', sans-serif" },
+      { label: 'Manrope', value: "'Manrope', sans-serif" },
+      { label: 'Open Sans', value: "'Open Sans', sans-serif" },
+    ],
+  },
+  {
+    label: 'Editorial Serif',
+    fonts: [
+      { label: 'Playfair Display', value: "'Playfair Display', serif" },
+      { label: 'DM Serif Display', value: "'DM Serif Display', serif" },
+      { label: 'Cormorant Garamond', value: "'Cormorant Garamond', serif" },
+      { label: 'Lora', value: "'Lora', serif" },
+      { label: 'Georgia', value: 'Georgia' },
+    ],
+  },
+  {
+    label: 'Display',
+    fonts: [
+      { label: 'Bebas Neue', value: "'Bebas Neue', sans-serif" },
+      { label: 'Arial', value: 'Arial' },
+      { label: 'Times New Roman', value: 'Times New Roman' },
+      { label: 'Verdana', value: 'Verdana' },
+    ],
+  },
+];
+
+const FEATURED_FONT_CHOICES = [
+  { label: 'Clean', value: "'Poppins', sans-serif" },
+  { label: 'Bold', value: "'Space Grotesk', sans-serif" },
+  { label: 'Luxury', value: "'Playfair Display', serif" },
+  { label: 'Poster', value: "'Bebas Neue', sans-serif" },
+];
+
 export default function RightPanel({ selectedElement, onChange, onLayerChange, onDelete, onDuplicate, backgroundImage, onBackgroundImageChange }) {
   const elementImageInputRef = useRef(null);
 
@@ -232,30 +271,67 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
               <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Font Family</label>
               <select 
                 name="fontFamily"
-                value={selectedElement.fontFamily || 'Arial'}
+                value={selectedElement.fontFamily || "'Poppins', sans-serif"}
                 onChange={handleChange}
                 className="w-full border border-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all bg-white"
               >
-                <optgroup label="System Fonts">
-                  <option value="Arial">Arial</option>
-                  <option value="Times New Roman">Times New Roman</option>
-                  <option value="Courier New">Courier New</option>
-                  <option value="Verdana">Verdana</option>
-                  <option value="Georgia">Georgia</option>
-                </optgroup>
-                <optgroup label="Google Fonts">
-                  <option value="'Roboto', sans-serif">Roboto</option>
-                  <option value="'Open Sans', sans-serif">Open Sans</option>
-                  <option value="'Lato', sans-serif">Lato</option>
-                  <option value="'Montserrat', sans-serif">Montserrat</option>
-                  <option value="'Oswald', sans-serif">Oswald</option>
-                  <option value="'Raleway', sans-serif">Raleway</option>
-                  <option value="'Playfair Display', serif">Playfair Display</option>
-                  <option value="'Merriweather', serif">Merriweather</option>
-                  <option value="'Ubuntu', sans-serif">Ubuntu</option>
-                  <option value="'Lora', serif">Lora</option>
-                </optgroup>
+                {FONT_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.fonts.map((font) => (
+                      <option key={font.value} value={font.value}>{font.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Style Picks</label>
+              <div className="grid grid-cols-2 gap-2">
+                {FEATURED_FONT_CHOICES.map((font) => (
+                  <button
+                    key={font.value}
+                    onClick={() => handleAssign('fontFamily', font.value)}
+                    className={`rounded-xl border px-3 py-3 text-left transition-all ${
+                      selectedElement.fontFamily === font.value
+                        ? 'border-blue-300 bg-blue-50 shadow-sm'
+                        : 'border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">{font.label}</div>
+                    <div className="mt-1 text-lg text-gray-900" style={{ fontFamily: font.value }}>Aa</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Line Height</label>
+                <input
+                  type="number"
+                  name="lineHeight"
+                  min="0.8"
+                  max="2.2"
+                  step="0.05"
+                  value={selectedElement.lineHeight || 1.2}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Spacing</label>
+                <input
+                  type="number"
+                  name="letterSpacing"
+                  min="-4"
+                  max="12"
+                  step="0.1"
+                  value={selectedElement.letterSpacing || 0}
+                  onChange={handleChange}
+                  className="w-full border border-gray-200 rounded-md p-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all"
+                />
+              </div>
             </div>
             
             <div className="space-y-1">
@@ -653,7 +729,18 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
           </div>
           <div className="space-y-1">
             <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Height</label>
-            <input type="number" name="height" value={Math.round(selectedElement.height || 0)} onChange={handleChange} className="w-full border border-gray-200 rounded-md p-2 text-sm" />
+            <input
+              type="number"
+              name="height"
+              value={Math.round(selectedElement.height || 0)}
+              onChange={handleChange}
+              disabled={selectedElement.type === 'text'}
+              className={`w-full rounded-md p-2 text-sm ${
+                selectedElement.type === 'text'
+                  ? 'border border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border border-gray-200'
+              }`}
+            />
           </div>
           <div className="space-y-1 col-span-2">
             <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Rotation</label>

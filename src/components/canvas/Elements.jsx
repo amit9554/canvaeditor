@@ -54,6 +54,21 @@ const TEXT_PRESETS = {
   },
 };
 
+const FONT_FAMILIES = [
+  { label: 'Poppins', value: "'Poppins', sans-serif" },
+  { label: 'Montserrat', value: "'Montserrat', sans-serif" },
+  { label: 'Space Grotesk', value: "'Space Grotesk', sans-serif" },
+  { label: 'Manrope', value: "'Manrope', sans-serif" },
+  { label: 'Open Sans', value: "'Open Sans', sans-serif" },
+  { label: 'Playfair Display', value: "'Playfair Display', serif" },
+  { label: 'DM Serif Display', value: "'DM Serif Display', serif" },
+  { label: 'Cormorant Garamond', value: "'Cormorant Garamond', serif" },
+  { label: 'Bebas Neue', value: "'Bebas Neue', sans-serif" },
+  { label: 'Lora', value: "'Lora', serif" },
+  { label: 'Arial', value: 'Arial' },
+  { label: 'Georgia', value: 'Georgia' },
+];
+
 export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDelete, onDuplicate }) => {
   const shapeRef = useRef();
   const trRef = useRef();
@@ -184,24 +199,27 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     return style.trim() || 'normal';
   };
 
-  const measureTextLayout = (textValue) => {
+  const getTextLayout = (incomingProps = shapeProps, textValue = incomingProps.text) => {
     const textNode = new Konva.Text({
       text: textValue || ' ',
-      fontSize: shapeProps.fontSize || 20,
-      fontFamily: shapeProps.fontFamily || 'Arial',
-      fontStyle: getFontStyle(),
-      lineHeight: 1.2,
-      width: Math.max(120, shapeProps.width || 180),
+      fontSize: incomingProps.fontSize || 20,
+      fontFamily: incomingProps.fontFamily || 'Arial',
+      fontStyle: `${incomingProps.isItalic ? 'italic ' : ''}${incomingProps.isBold ? 'bold' : ''}`.trim() || 'normal',
+      lineHeight: incomingProps.lineHeight || 1.2,
+      letterSpacing: incomingProps.letterSpacing || 0,
+      width: Math.max(120, incomingProps.width || 180),
       padding: 0,
       wrap: 'word',
-      align: shapeProps.align || 'left',
+      align: incomingProps.align || 'left',
     });
 
     return {
       width: Math.max(120, Math.ceil(textNode.width())),
-      height: Math.max(shapeProps.fontSize || 20, Math.ceil(textNode.height())),
+      height: Math.max(incomingProps.fontSize || 20, Math.ceil(textNode.height())),
     };
   };
+
+  const measureTextLayout = (textValue) => getTextLayout(shapeProps, textValue);
 
   const startInlineEditing = () => {
     if (shapeProps.type !== 'text') return;
@@ -579,14 +597,21 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
         <Arrow {...commonProps} points={[0, shapeProps.height / 2, shapeProps.width, shapeProps.height / 2]} stroke={shapeProps.fill} fill={shapeProps.fill} strokeWidth={Math.max(2, shapeProps.height / 3)} pointerLength={shapeProps.pointerLength || 28} pointerWidth={shapeProps.pointerWidth || 24} opacity={shapeProps.opacity ?? 1} {...shadowProps} />
       )}
       {shapeProps.type === 'text' && (
-         <Text 
-           {...commonProps} 
+         <Text
+           {...(() => {
+             const { height, ...textCommonProps } = commonProps;
+             return textCommonProps;
+           })()}
            text={isEditingText ? draftText : shapeProps.text} 
+           width={Math.max(120, shapeProps.width || 180)}
            fontSize={shapeProps.fontSize} 
            fontFamily={shapeProps.fontFamily} 
            fill={shapeProps.fill} 
            fontStyle={getFontStyle()}
            align={shapeProps.align || 'left'}
+           wrap="word"
+           lineHeight={shapeProps.lineHeight || 1.2}
+           letterSpacing={shapeProps.letterSpacing || 0}
            opacity={shapeProps.opacity ?? 1}
            stroke={shapeProps.strokeColor}
            strokeWidth={shapeProps.strokeWidth || 0}
@@ -639,12 +664,9 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
                     onChange={(e) => onChange({...shapeProps, fontFamily: e.target.value})}
                     title="Font Family"
                   >
-                     <option value="Arial">Arial</option>
-                     <option value="'Roboto', sans-serif">Roboto</option>
-                     <option value="'Open Sans', sans-serif">Open Sans</option>
-                     <option value="'Montserrat', sans-serif">Montserrat</option>
-                     <option value="'Oswald', sans-serif">Oswald</option>
-                     <option value="'Playfair Display', serif">Playfair Display</option>
+                     {FONT_FAMILIES.map((font) => (
+                       <option key={font.value} value={font.value}>{font.label}</option>
+                     ))}
                   </select>
                   <button onClick={() => updateFontSize(-2)} title="Decrease Font Size" className="rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
                     <Minus size={14} />
@@ -759,7 +781,8 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
               fontStyle: shapeProps.isItalic ? 'italic' : 'normal',
               color: 'transparent',
               caretColor: shapeProps.fill || '#000000',
-              lineHeight: '1.2',
+              lineHeight: `${shapeProps.lineHeight || 1.2}`,
+              letterSpacing: `${shapeProps.letterSpacing || 0}px`,
               textAlign: shapeProps.align || 'left',
               transform: `rotate(${shapeProps.rotation || 0}deg)`,
               transformOrigin: 'top left',

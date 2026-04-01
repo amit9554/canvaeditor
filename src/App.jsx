@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import Konva from 'konva';
 import { v4 as uuidv4 } from 'uuid';
 import TopToolbar from './components/toolbar/TopToolbar';
 import LeftSidebar from './components/sidebar/LeftSidebar';
@@ -145,6 +146,36 @@ const createGraphicElements = (variant, templateSize) => {
   return [];
 };
 
+const normalizeTextElement = (element) => {
+  if (!element || element.type !== 'text') return element;
+
+  const width = Math.max(120, Number(element.width) || 300);
+  const fontSize = Math.max(8, Number(element.fontSize) || 20);
+  const lineHeight = Number(element.lineHeight) || 1.2;
+  const letterSpacing = Number(element.letterSpacing) || 0;
+
+  const textNode = new Konva.Text({
+    text: element.text || ' ',
+    width,
+    fontSize,
+    fontFamily: element.fontFamily || 'Arial',
+    fontStyle: `${element.isItalic ? 'italic ' : ''}${element.isBold ? 'bold' : ''}`.trim() || 'normal',
+    wrap: 'word',
+    lineHeight,
+    letterSpacing,
+    padding: 0,
+    align: element.align || 'left',
+  });
+
+  return {
+    ...element,
+    width,
+    height: Math.max(fontSize, Math.ceil(textNode.height())),
+    lineHeight,
+    letterSpacing,
+  };
+};
+
 function App() {
   const [elements, setElements] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -218,7 +249,19 @@ function App() {
     
     let props = {};
     if (type === 'text') {
-      props = { text: 'Double click to edit', fontSize: 40, fontFamily: 'Arial', fill: '#000000', width: 300, height: 50, isBold: false, isItalic: false, align: 'left', opacity: 1 };
+      props = {
+        text: 'Double click to edit',
+        fontSize: 40,
+        fontFamily: "'Poppins', sans-serif",
+        fill: '#000000',
+        width: 320,
+        isBold: false,
+        isItalic: false,
+        align: 'left',
+        opacity: 1,
+        lineHeight: 1.15,
+        letterSpacing: -0.4,
+      };
       basePath.x = templateSize.width / 2 - 150;
     } else if (type === 'rectangle') {
       props = { width: 200, height: 150, fill: '#3B82F6', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
@@ -308,7 +351,8 @@ function App() {
       basePath.y = templateSize.height / 2 - 160;
     }
 
-    updateElementsAndHistory([...elements, { ...basePath, ...props }]);
+    const nextElement = type === 'text' ? normalizeTextElement({ ...basePath, ...props }) : { ...basePath, ...props };
+    updateElementsAndHistory([...elements, nextElement]);
     setSelectedId(id);
   };
 
@@ -358,7 +402,7 @@ function App() {
         scaledEl.scaleY = (el.scaleY || 1) * scale;
       }
       
-      return scaledEl;
+      return scaledEl.type === 'text' ? normalizeTextElement(scaledEl) : scaledEl;
     });
 
     updateElementsAndHistory([...elements, ...elementsWithIds]);
@@ -368,7 +412,8 @@ function App() {
   };
 
   const handleChangeElement = (newProps) => {
-    updateElementsAndHistory(elements.map(el => el.id === newProps.id ? newProps : el));
+    const normalizedProps = newProps.type === 'text' ? normalizeTextElement(newProps) : newProps;
+    updateElementsAndHistory(elements.map(el => el.id === normalizedProps.id ? normalizedProps : el));
   };
 
   const handleDuplicateElement = () => {
@@ -382,7 +427,7 @@ function App() {
             x: elToCopy.x + 20,
             y: elToCopy.y + 20,
           };
-          updateElementsAndHistory([...elements, newElement]);
+          updateElementsAndHistory([...elements, newElement.type === 'text' ? normalizeTextElement(newElement) : newElement]);
           setSelectedId(newId);
        }
     }
@@ -644,7 +689,7 @@ function App() {
         setBackgroundImage(json.backgroundImage || null);
 
         // Load objects and push to history
-        updateElementsAndHistory(json.objects);
+        updateElementsAndHistory(json.objects.map((element) => normalizeTextElement(element)));
         setSelectedId(null);
       } catch (err) {
         alert('Failed to parse JSON file. Please upload a valid template JSON.');
