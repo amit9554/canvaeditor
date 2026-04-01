@@ -176,6 +176,45 @@ const normalizeTextElement = (element) => {
   };
 };
 
+const escapeSvgText = (value = '') => value
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
+
+const getSvgTextLayout = (element) => {
+  const fontSize = Math.max(8, Number(element.fontSize) || 20);
+  const width = Math.max(120, Number(element.width) || 300);
+  const lineHeight = Number(element.lineHeight) || 1.2;
+  const letterSpacing = Number(element.letterSpacing) || 0;
+
+  const textNode = new Konva.Text({
+    text: (element.text || '').toString() || ' ',
+    width,
+    fontSize,
+    fontFamily: element.fontFamily || 'Arial',
+    fontStyle: `${element.isItalic ? 'italic ' : ''}${element.isBold ? 'bold' : ''}`.trim() || 'normal',
+    wrap: 'word',
+    lineHeight,
+    letterSpacing,
+    padding: 0,
+    align: element.align || 'left',
+  });
+
+  const lines = Array.isArray(textNode.textArr) && textNode.textArr.length > 0
+    ? textNode.textArr.map((line) => line.text)
+    : ((element.text || '').toString().split('\n'));
+
+  return {
+    fontSize,
+    width,
+    lineHeight,
+    letterSpacing,
+    lines,
+  };
+};
+
 function App() {
   const [elements, setElements] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -735,18 +774,21 @@ function App() {
         const r = el.width / 2;
         content += `<circle cx="${r}" cy="${r}" r="${r}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
       } else if (el.type === 'text') {
-        const lines = (el.text || '').toString().split('\n');
+        const { lines, fontSize, width, lineHeight, letterSpacing } = getSvgTextLayout(el);
         let xOffset = 0;
         let textAnchor = 'start';
-        if (el.align === 'center' && el.width) {
-          xOffset = el.width / 2;
+        if (el.align === 'center' && width) {
+          xOffset = width / 2;
           textAnchor = 'middle';
-        } else if (el.align === 'right' && el.width) {
-          xOffset = el.width;
+        } else if (el.align === 'right' && width) {
+          xOffset = width;
           textAnchor = 'end';
         }
-        const tspans = lines.map((line, i) => `<tspan x="${xOffset}" dy="${i === 0 ? '0.9em' : '1.2em'}">${line}</tspan>`).join('');
-        content += `<text fill="${el.fill || '#000000'}" font-family="${(el.fontFamily || 'Arial').replace(/'/g, '')}" font-size="${el.fontSize}" font-weight="${el.isBold ? 'bold' : 'normal'}" font-style="${el.isItalic ? 'italic' : 'normal'}" text-anchor="${textAnchor}" ${opacityAttr} ${strokeAttr} transform="${transform}">${tspans}</text>`;
+        const tspans = lines.map((line, i) => {
+          const y = i * fontSize * lineHeight;
+          return `<tspan x="${xOffset}" y="${y}">${escapeSvgText(line || ' ')}</tspan>`;
+        }).join('');
+        content += `<text fill="${el.fill || '#000000'}" font-family="${(el.fontFamily || 'Arial').replace(/'/g, '')}" font-size="${fontSize}" font-weight="${el.isBold ? 'bold' : 'normal'}" font-style="${el.isItalic ? 'italic' : 'normal'}" text-anchor="${textAnchor}" dominant-baseline="hanging" xml:space="preserve" lengthAdjust="spacingAndGlyphs" ${letterSpacing ? `letter-spacing="${letterSpacing}"` : ''} ${opacityAttr} ${strokeAttr} transform="${transform}">${tspans}</text>`;
       } else if (el.type === 'image' || el.type === 'profileImage' || el.type === 'photoFrame') {
         let clipAttr = '';
         const useCircleMask = el.maskShape === 'circle';
