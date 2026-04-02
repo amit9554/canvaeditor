@@ -221,6 +221,7 @@ function App() {
   const [bgColor, setBgColor] = useState('#ffffff');
   const [backgroundImage, setBackgroundImage] = useState(null);
   const [templateSize, setTemplateSize] = useState(TEMPLATE_SIZES.instagramPost);
+  const [lastUpdated, setLastUpdated] = useState(null);
   
   const stageRef = useRef(null);
 
@@ -258,6 +259,7 @@ function App() {
     setHistory(nextHistory);
     setHistoryStep(nextHistory.length - 1);
     setElements(newElements);
+    setLastUpdated(Date.now());
     persistDraft(newElements);
   };
 
@@ -858,6 +860,89 @@ function App() {
     downloadAnchor.remove();
   };
 
+  const handleDownloadFabricSVG = () => {
+    // Generate SVG specifically optimized for Fabric.js
+    let defs = '<defs>';
+    let content = '';
+    
+    elements.forEach((el, index) => {
+      const transform = `translate(${el.x}, ${el.y}) rotate(${el.rotation || 0}) scale(${el.scaleX || 1}, ${el.scaleY || 1})`;
+      const opacityAttr = `opacity="${el.opacity ?? 1}"`;
+      const strokeAttr = `stroke="${el.strokeColor || 'transparent'}" stroke-width="${el.strokeWidth || 0}"`;
+
+      if (el.type === 'rectangle') {
+        content += `<rect x="0" y="0" width="${el.width}" height="${el.height}" fill="${el.fill}" rx="${el.cornerRadius || 0}" ry="${el.cornerRadius || 0}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'circle') {
+        const r = el.width / 2;
+        content += `<circle cx="${r}" cy="${r}" r="${r}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'text') {
+        const { lines, fontSize, width, lineHeight, letterSpacing } = getSvgTextLayout(el);
+        let xOffset = 0;
+        let textAnchor = 'start';
+        if (el.align === 'center') {
+          xOffset = width / 2;
+          textAnchor = 'middle';
+        } else if (el.align === 'right') {
+          xOffset = width;
+          textAnchor = 'end';
+        }
+        
+        const tspans = lines.map((line, i) => {
+          const dy = i === 0 ? fontSize : fontSize * lineHeight;
+          return `<tspan x="${xOffset}" dy="${dy}">${escapeSvgText(line || ' ')}</tspan>`;
+        }).join('');
+        
+        content += `<text x="0" y="0" fill="${el.fill || '#000000'}" font-family="${(el.fontFamily || 'Arial').replace(/'/g, '')}" font-size="${fontSize}" font-weight="${el.isBold ? 'bold' : 'normal'}" font-style="${el.isItalic ? 'italic' : 'normal'}" text-anchor="${textAnchor}" xml:space="preserve" ${letterSpacing ? `letter-spacing="${letterSpacing}"` : ''} ${opacityAttr} ${strokeAttr} transform="${transform}">${tspans}</text>`;
+      } else if (el.type === 'image' || el.type === 'profileImage' || el.type === 'photoFrame') {
+        content += `<image href="${el.src}" x="0" y="0" width="${el.width}" height="${el.height}" preserveAspectRatio="xMidYMid slice" ${opacityAttr} transform="${transform}" />`;
+      } else if (el.type === 'ellipse') {
+        content += `<ellipse cx="${el.width / 2}" cy="${el.height / 2}" rx="${el.width / 2}" ry="${el.height / 2}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'triangle') {
+        const r = el.width / 2;
+        content += `<polygon points="${r},0 ${el.width},${el.height} 0,${el.height}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'hexagon') {
+        const w = el.width;
+        const h = el.height;
+        const points = `${w * 0.25},0 ${w * 0.75},0 ${w},${h / 2} ${w * 0.75},${h} ${w * 0.25},${h} 0,${h / 2}`;
+        content += `<polygon points="${points}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'star') {
+        const outer = el.width / 2;
+        const inner = el.width / 4;
+        let pointsArr = [];
+        for (let i = 0; i < 10; i++) {
+          const r = i % 2 === 0 ? outer : inner;
+          const a = (i * Math.PI) / 5 - Math.PI / 2;
+          pointsArr.push(`${outer + r * Math.cos(a)},${outer + r * Math.sin(a)}`);
+        }
+        content += `<polygon points="${pointsArr.join(' ')}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      } else if (el.type === 'line') {
+        content += `<line x1="0" y1="0" x2="${el.width}" y2="0" stroke="${el.fill}" stroke-width="${Math.max(2, el.height / 10)}" ${opacityAttr} transform="${transform}" />`;
+      } else if (el.type === 'arrow') {
+        content += `<line x1="0" y1="${el.height / 2}" x2="${el.width}" y2="${el.height / 2}" stroke="${el.fill}" stroke-width="${Math.max(2, el.height / 3)}" ${opacityAttr} transform="${transform}" />`;
+      } else if (el.type === 'path') {
+        content += `<path d="${el.data}" fill="${el.fill || 'transparent'}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
+      }
+    });
+
+    defs += '</defs>';
+    let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${templateSize.width}" height="${templateSize.height}" viewBox="0 0 ${templateSize.width} ${templateSize.height}">`;
+    svg += defs;
+    svg += `<rect width="${templateSize.width}" height="${templateSize.height}" fill="${bgColor}" />`;
+    if (backgroundImage?.src) {
+      svg += `<image href="${backgroundImage.src}" width="${templateSize.width}" height="${templateSize.height}" preserveAspectRatio="xMidYMid slice" opacity="${backgroundImage.opacity ?? 1}" />`;
+    }
+    svg += content;
+    svg += `</svg>`;
+
+    const dataStrFromFabric = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+    const downloadAnchorFromFabric = document.createElement('a');
+    downloadAnchorFromFabric.setAttribute("href", dataStrFromFabric);
+    downloadAnchorFromFabric.setAttribute("download", "fabric-design.svg");
+    document.body.appendChild(downloadAnchorFromFabric);
+    downloadAnchorFromFabric.click();
+    downloadAnchorFromFabric.remove();
+  };
+
   const handleSaveTemplate = async () => {
     const payload = {
       width: templateSize.width,
@@ -902,6 +987,9 @@ function App() {
       }
       if (draft.backgroundImage !== undefined) {
         setBackgroundImage(draft.backgroundImage);
+      }
+      if (draft.savedAt) {
+        setLastUpdated(draft.savedAt);
       }
 
       setElements(draft.elements);
@@ -979,8 +1067,10 @@ function App() {
         onDownload={handleDownloadJSON}
         onDownloadFabricJSON={handleDownloadFabricJSON}
         onDownloadSVG={handleDownloadSVG}
+        onDownloadFabricSVG={handleDownloadFabricSVG}
         onDownloadImage={handleDownloadImage}
         onClear={handleClear} 
+        lastUpdated={lastUpdated}
         templateSizes={TEMPLATE_SIZES}
         templateSize={templateSize}
         setTemplateSize={setTemplateSize}
