@@ -161,6 +161,12 @@ export default function TopToolbar({
             <Download size={14} /> Fabric SVG
           </button>
           <button
+            onClick={onDownload}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-all text-[11px] font-bold border border-indigo-100"
+          >
+            <Download size={14} /> Project JSON
+          </button>
+          <button
             onClick={onDownloadFabricJSON}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-lg transition-all text-[11px] font-bold border border-purple-100"
           >

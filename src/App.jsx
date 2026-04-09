@@ -1091,6 +1091,7 @@ function App() {
           onBgColorChange={setBgColor}
           backgroundImage={backgroundImage}
           onBackgroundImageChange={setBackgroundImage}
+          onDownloadJSON={handleDownloadJSON}
         />
         <EditorCanvas 
           stageRef={stageRef}

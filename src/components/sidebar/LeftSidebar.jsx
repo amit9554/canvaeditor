@@ -4,7 +4,7 @@ import {
   Image as ImageIcon, PaintBucket, Octagon, MoveRight, 
   Aperture, LayoutGrid, Sparkles, Wand2,
   Box, Shapes, UploadCloud, Palette, Pencil, Search,
-  Plus, ChevronRight
+  Plus, ChevronRight, Download
 } from 'lucide-react';
 
 const SHAPE_TOOLS = [
@@ -40,7 +40,7 @@ const PRESET_GRADIENTS = [
   { name: 'Glow', value: 'linear-gradient(to bottom right, #00c6ff, #0072ff)' },
 ];
 
-export default function LeftSidebar({ onAddElement, onAddElements, onAddGraphicPreset, bgColor, onBgColorChange, backgroundImage, onBackgroundImageChange }) {
+export default function LeftSidebar({ onAddElement, onAddElements, onAddGraphicPreset, bgColor, onBgColorChange, backgroundImage, onBackgroundImageChange, onDownloadJSON }) {
   const [activeTab, setActiveTab] = useState('templates');
   const imageInputRef = useRef(null);
   const backgroundInputRef = useRef(null);
@@ -410,6 +410,17 @@ export default function LeftSidebar({ onAddElement, onAddElements, onAddGraphicP
                 </div>
             </div>
             
+            <div className="mt-8 space-y-3">
+                <button 
+                    onClick={onDownloadJSON}
+                    className="w-full flex items-center justify-center gap-3 rounded-2xl bg-slate-900 px-4 py-4 text-sm font-bold text-white transition hover:bg-slate-800 shadow-lg shadow-slate-200"
+                >
+                    <Download size={18} />
+                    Download Project (JSON)
+                </button>
+                <div className="text-[10px] text-center text-slate-400">Save the entire design state to edit later</div>
+            </div>
+
             <div className="mt-8 flex items-center justify-between">
                 <h4 className="text-xs font-bold uppercase text-slate-400">Your Assets</h4>
                 <button className="text-xs font-bold text-sky-600 hover:underline">View All</button>
