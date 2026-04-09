@@ -23,6 +23,7 @@ export const TEMPLATE_SIZES = {
   linkedinBanner: { id: 'linkedinBanner', name: 'LinkedIn Banner (1584x396)', width: 1584, height: 396 },
   pinterestPin: { id: 'pinterestPin', name: 'Pinterest Pin (416x624)', width: 416, height: 624 },
   tiktokVideo: { id: 'tiktokVideo', name: 'TikTok Video (322x572)', width: 322, height: 572 },
+  logo: { id: 'logo', name: 'Logo (500x500)', width: 500, height: 500 },
   custom: { id: 'custom', name: 'Custom Screen (800x800)', width: 800, height: 800 },
 };
 
