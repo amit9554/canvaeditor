@@ -64,7 +64,7 @@ export default function TopToolbar({
             <select
               value={templateSize.id}
               onChange={(e) => setTemplateSize(templateSizes[e.target.value])}
-              className="text-xs font-semibold border border-gray-200 rounded-lg bg-gray-50/50 text-gray-700 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary border-none bg-gray-100/50 hover:bg-gray-100 transition-all cursor-pointer appearance-none min-w-[180px]"
+              className="text-xs font-semibold border border-gray-200 rounded-lg bg-gray-50/50 text-gray-700 py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary border-none bg-gray-100/50 hover:bg-gray-100 transition-all cursor-pointer appearance-none min-w-[200px]"
             >
               {Object.entries(templateSizes).map(([key, item]) => (
                 <option key={key} value={key}>{item.name}</option>
@@ -74,36 +74,6 @@ export default function TopToolbar({
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
             </div>
           </div>
-
-          {(templateSize.id === 'custom' || templateSize.id === 'logo') && (
-            <div className="flex items-center gap-1.5 bg-gray-100/50 p-0.5 rounded-lg border border-gray-100 animate-in fade-in zoom-in duration-200">
-              <div className="flex items-center">
-                <div className="flex items-center px-1.5 h-7">
-                  <span className="text-[10px] font-bold text-gray-400 select-none">W</span>
-                </div>
-                <input
-                  type="number"
-                  value={templateSize.width}
-                  onChange={(e) => setTemplateSize({ ...templateSize, width: parseInt(e.target.value) || 0 })}
-                  className="w-14 h-7 text-[11px] bg-white border-none rounded-md py-0 px-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-gray-700 text-center shadow-sm"
-                  placeholder="W"
-                />
-              </div>
-              <div className="text-gray-300 font-light select-none">×</div>
-              <div className="flex items-center">
-                <input
-                  type="number"
-                  value={templateSize.height}
-                  onChange={(e) => setTemplateSize({ ...templateSize, height: parseInt(e.target.value) || 0 })}
-                  className="w-14 h-7 text-[11px] bg-white border-none rounded-md py-0 px-2 focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-gray-700 text-center shadow-sm"
-                  placeholder="H"
-                />
-                <div className="flex items-center px-1.5 h-7">
-                  <span className="text-[10px] font-bold text-gray-400 select-none">H</span>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -164,7 +134,7 @@ export default function TopToolbar({
             onClick={onDownload}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg transition-all text-[11px] font-bold border border-indigo-100"
           >
-            <Download size={14} /> Project JSON
+            <Download size={14} /> Normal JSON
           </button>
           <button
             onClick={onDownloadFabricJSON}

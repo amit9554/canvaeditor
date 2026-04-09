@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { ArrowUp, ArrowDown, Trash, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Copy, Image as ImageIcon, Eraser, Upload } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Copy, Image as ImageIcon, Eraser, Upload, Plus } from 'lucide-react';
 
 const transformTextCase = (text, mode) => {
   const value = `${text || ''}`;
@@ -90,7 +90,7 @@ const FEATURED_FONT_CHOICES = [
   { label: 'Poster', value: "'Bebas Neue', sans-serif" },
 ];
 
-export default function RightPanel({ selectedElement, onChange, onLayerChange, onDelete, onDuplicate, backgroundImage, onBackgroundImageChange }) {
+export default function RightPanel({ selectedElement, onChange, onLayerChange, onDelete, onDuplicate, backgroundImage, onBackgroundImageChange, templateSize, templateSizes, setTemplateSize }) {
   const elementImageInputRef = useRef(null);
 
   if (!selectedElement) {
@@ -164,6 +164,40 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
               <p className="text-sm text-gray-500 leading-6">Upload a background image to control blur, fade, and fit settings here.</p>
             )}
           </div>
+
+          {/* New Canvas Dimensions Section */}
+          <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-4">
+            <div className="flex items-center gap-2 text-gray-800">
+              <Plus size={16} className="text-blue-500" />
+              <span className="text-sm font-medium">Canvas Dimensions</span>
+            </div>
+            
+            <div className="space-y-3">
+              {(templateSize?.id === 'custom' || templateSize?.id === 'logo') && (
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Width (px)</label>
+                    <input
+                      type="number"
+                      value={templateSize.width}
+                      onChange={(e) => setTemplateSize({ ...templateSize, width: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-200 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-gray-700"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Height (px)</label>
+                    <input
+                      type="number"
+                      value={templateSize.height}
+                      onChange={(e) => setTemplateSize({ ...templateSize, height: parseInt(e.target.value) || 0 })}
+                      className="w-full border border-gray-200 rounded-lg p-2 text-sm bg-white focus:ring-2 focus:ring-primary/20 outline-none transition-all font-bold text-gray-700"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500 leading-6">
             Select an element to access advanced controls for opacity, blur, collage photo slots, stylish frame colors, path data, and layers.
           </div>

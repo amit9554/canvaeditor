@@ -1113,6 +1113,9 @@ function App() {
           onDuplicate={handleDuplicateElement}
           backgroundImage={backgroundImage}
           onBackgroundImageChange={setBackgroundImage}
+          templateSize={templateSize}
+          templateSizes={TEMPLATE_SIZES}
+          setTemplateSize={setTemplateSize}
         />
       </div>
     </div>
