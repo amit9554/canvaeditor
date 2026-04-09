@@ -394,7 +394,7 @@ function App() {
       basePath.y = templateSize.height / 2 - 160;
     }
 
-    const nextElement = type === 'text' ? normalizeTextElement({ ...basePath, ...props }) : { ...basePath, ...props };
+    const nextElement = type === 'text' ? normalizeTextElement({ ...basePath, ...props, ...extraProps }) : { ...basePath, ...props, ...extraProps };
     updateElementsAndHistory([...elements, nextElement]);
     setSelectedId(id);
   };
