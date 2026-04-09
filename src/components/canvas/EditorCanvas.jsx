@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import Konva from 'konva';
 import { Stage, Layer, Rect, Image as KonvaImage } from 'react-konva';
 import { ElementNode } from './Elements';
+import FloatingToolbar from './FloatingToolbar';
 
 export default function EditorCanvas({ 
   stageRef,
@@ -19,6 +20,8 @@ export default function EditorCanvas({
   const containerRef = useRef(null);
   const bgImageRef = useRef(null);
   const [bgImage, setBgImage] = useState(null);
+
+  const selectedElement = elements.find(el => el.id === selectedId);
 
   useEffect(() => {
     const updateSize = () => {
@@ -86,7 +89,7 @@ export default function EditorCanvas({
   
   return (
     <div 
-      className="flex-1 w-full h-full relative overflow-auto bg-gray-200 flex items-start justify-center px-8 pt-24 pb-16"
+      className="flex-1 w-full h-full relative overflow-auto bg-gray-200 flex flex-col items-center px-8 pt-4 pb-16"
       onKeyDown={(e) => {
         if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
            if(onDelete) {
@@ -100,8 +103,18 @@ export default function EditorCanvas({
       tabIndex={0}
       ref={containerRef}
     >
+      {/* Floating Toolbar Space */}
+      <div className="h-16 w-full flex-shrink-0 relative">
+        <FloatingToolbar 
+          selectedElement={selectedElement}
+          onChange={(newProps) => handleChange(selectedId, newProps)}
+          onDelete={() => onDelete && onDelete(selectedId)}
+          onDuplicate={() => onDuplicate && onDuplicate(selectedId)}
+        />
+      </div>
+
       <div 
-        className="relative z-10 bg-white shadow-xl overflow-visible" 
+        className="relative z-10 bg-white shadow-xl overflow-visible mt-4" 
         style={{ 
           width: stageWidth, 
           height: stageHeight,

@@ -150,27 +150,28 @@ const createGraphicElements = (variant, templateSize) => {
 const normalizeTextElement = (element) => {
   if (!element || element.type !== 'text') return element;
 
-  const width = Math.max(120, Number(element.width) || 300);
+  const width = Number(element.width) || 300;
   const fontSize = Math.max(8, Number(element.fontSize) || 20);
   const lineHeight = Number(element.lineHeight) || 1.2;
   const letterSpacing = Number(element.letterSpacing) || 0;
 
   const textNode = new Konva.Text({
     text: element.text || ' ',
-    width,
     fontSize,
     fontFamily: element.fontFamily || 'Arial',
     fontStyle: `${element.isItalic ? 'italic ' : ''}${element.isBold ? 'bold' : ''}`.trim() || 'normal',
-    wrap: 'word',
     lineHeight,
     letterSpacing,
     padding: 0,
     align: element.align || 'left',
   });
 
+  const naturalWidth = Math.ceil(textNode.width());
+  const finalWidth = element.width ? Math.min(element.width, naturalWidth) : naturalWidth;
+
   return {
     ...element,
-    width,
+    width: Math.max(5, finalWidth),
     height: Math.max(fontSize, Math.ceil(textNode.height())),
     lineHeight,
     letterSpacing,
@@ -186,7 +187,7 @@ const escapeSvgText = (value = '') => value
 
 const getSvgTextLayout = (element) => {
   const fontSize = Math.max(8, Number(element.fontSize) || 20);
-  const width = Math.max(120, Number(element.width) || 300);
+  const width = Number(element.width) || 300;
   const lineHeight = Number(element.lineHeight) || 1.2;
   const letterSpacing = Number(element.letterSpacing) || 0;
 

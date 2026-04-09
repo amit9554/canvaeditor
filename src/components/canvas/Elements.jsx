@@ -207,14 +207,15 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
       fontStyle: `${incomingProps.isItalic ? 'italic ' : ''}${incomingProps.isBold ? 'bold' : ''}`.trim() || 'normal',
       lineHeight: incomingProps.lineHeight || 1.2,
       letterSpacing: incomingProps.letterSpacing || 0,
-      width: Math.max(120, incomingProps.width || 180),
       padding: 0,
-      wrap: 'word',
       align: incomingProps.align || 'left',
     });
 
+    const naturalWidth = Math.ceil(textNode.width());
+    const finalWidth = incomingProps.width ? Math.min(incomingProps.width, naturalWidth) : naturalWidth;
+
     return {
-      width: Math.max(120, Math.ceil(textNode.width())),
+      width: Math.max(5, finalWidth),
       height: Math.max(incomingProps.fontSize || 20, Math.ceil(textNode.height())),
     };
   };
@@ -648,95 +649,6 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
         />
       )}
 
-      {isSelected && !isEditingText && (
-        <Html
-          groupProps={{
-            x: toolbarPosition.x,
-            y: toolbarPosition.y,
-          }}
-        >
-          <div className="pointer-events-auto z-[60] w-[34rem] max-w-[calc(100vw-3rem)] -translate-x-1/2 -translate-y-full rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-2xl backdrop-blur">
-             {shapeProps.type === 'text' && (
-                <div className="mb-2 flex flex-wrap items-center gap-1.5 border-b border-slate-100 pb-2">
-                  <select 
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs focus:outline-none w-24 cursor-pointer"
-                    value={shapeProps.fontFamily || 'Arial'}
-                    onChange={(e) => onChange({...shapeProps, fontFamily: e.target.value})}
-                    title="Font Family"
-                  >
-                     {FONT_FAMILIES.map((font) => (
-                       <option key={font.value} value={font.value}>{font.label}</option>
-                     ))}
-                  </select>
-                  <button onClick={() => updateFontSize(-2)} title="Decrease Font Size" className="rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
-                    <Minus size={14} />
-                  </button>
-                  <span className="min-w-8 text-center text-xs font-semibold text-slate-700">{shapeProps.fontSize || 16}</span>
-                  <button onClick={() => updateFontSize(2)} title="Increase Font Size" className="rounded-lg p-1.5 text-slate-600 transition hover:bg-slate-100 hover:text-slate-900">
-                    <Plus size={14} />
-                  </button>
-                  <button onClick={() => onChange({...shapeProps, isBold: !shapeProps.isBold})} title="Bold" className={`rounded-lg p-1.5 transition ${shapeProps.isBold ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                    <Bold size={14} />
-                  </button>
-                  <button onClick={() => onChange({...shapeProps, isItalic: !shapeProps.isItalic})} title="Italic" className={`rounded-lg p-1.5 transition ${shapeProps.isItalic ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                    <Italic size={14} />
-                  </button>
-                  <button onClick={() => onChange({...shapeProps, align: 'left'})} title="Align Left" className={`rounded-lg p-1.5 transition ${(!shapeProps.align || shapeProps.align === 'left') ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                    <AlignLeft size={14} />
-                  </button>
-                  <button onClick={() => onChange({...shapeProps, align: 'center'})} title="Align Center" className={`rounded-lg p-1.5 transition ${shapeProps.align === 'center' ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                    <AlignCenter size={14} />
-                  </button>
-                  <button onClick={() => onChange({...shapeProps, align: 'right'})} title="Align Right" className={`rounded-lg p-1.5 transition ${shapeProps.align === 'right' ? 'bg-sky-100 text-sky-700' : 'text-slate-600 hover:bg-slate-100'}`}>
-                    <AlignRight size={14} />
-                  </button>
-                </div>
-             )}
-
-             <div className="flex flex-wrap items-center gap-1.5">
-               {shapeProps.type === 'text' && (
-                  <>
-                    <button onClick={() => applyTextPreset('h2')} title="Heading 2" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H2</button>
-                    <button onClick={() => applyTextPreset('h3')} title="Heading 3" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H3</button>
-                    <button onClick={() => applyTextPreset('h4')} title="Heading 4" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">H4</button>
-                    <button onClick={() => applyTextPreset('paragraph')} title="Paragraph" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">P</button>
-                    <button onClick={() => updateTextCase('upper')} title="UPPERCASE" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">TT</button>
-                    <button onClick={() => updateTextCase('lower')} title="lowercase" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">tt</button>
-                    <button onClick={() => updateTextCase('title')} title="Title Case" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">Tt</button>
-                    <button onClick={() => updateTextCase('sentence')} title="Sentence case" className="rounded-lg border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:border-sky-200 hover:bg-sky-50">Aa</button>
-                  </>
-               )}
-               {['text', 'rectangle', 'circle', 'triangle', 'star', 'path', 'ellipse', 'hexagon'].includes(shapeProps.type) && (
-                  <div className="flex items-center justify-center w-7 h-7 rounded-full border border-gray-300 overflow-hidden mx-1 shadow-inner">
-                     <input type="color" value={shapeProps.fill || '#000'} onChange={(e) => onChange({...shapeProps, fill: e.target.value})} className="w-10 h-10 -ml-1 -mt-1 cursor-pointer" title="Fill Color" />
-                  </div>
-               )}
-               
-               {onDuplicate && (
-                  <>
-                  <div className="mx-0.5 h-5 w-px bg-slate-200"></div>
-                  <button onClick={onDuplicate} title="Duplicate" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-blue-50 hover:text-blue-600">
-                    <Copy size={14} />
-                  </button>
-                  </>
-               )}
-               
-               <div className="mx-0.5 h-5 w-px bg-slate-200"></div>
-               
-               <button onClick={() => onChange({...shapeProps, isLocked: !shapeProps.isLocked})} title={shapeProps.isLocked ? "Unlock Element" : "Lock Element"} className={`rounded-lg p-1.5 transition ${shapeProps.isLocked ? 'text-red-500 bg-red-50' : 'text-slate-500 hover:bg-slate-100'}`}>
-                  {shapeProps.isLocked ? <Lock size={14} /> : <Unlock size={14} />}
-               </button>
-               
-               {onDelete && (
-                  <button onClick={onDelete} title="Delete Element" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-red-50 hover:text-red-600">
-                    <Trash size={14} />
-                  </button>
-               )}
-             </div>
-          </div>
-        </Html>
-      )}
-
       {isEditingText && shapeProps.type === 'text' && (
         <Html
           groupProps={{
@@ -773,7 +685,7 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
             autoCorrect="off"
             className="resize-none overflow-hidden bg-transparent px-0 py-0 outline-none selection:bg-transparent selection:text-transparent"
             style={{
-              width: `${Math.max(120, shapeProps.width || 180)}px`,
+              width: `${shapeProps.width || 180}px`,
               minHeight: `${Math.max(48, shapeProps.height || (shapeProps.fontSize || 20) + 16)}px`,
               fontSize: `${shapeProps.fontSize || 20}px`,
               fontFamily: shapeProps.fontFamily || 'Arial',
