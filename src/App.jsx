@@ -5,6 +5,7 @@ import TopToolbar from './components/toolbar/TopToolbar';
 import LeftSidebar from './components/sidebar/LeftSidebar';
 import RightPanel from './components/panel/RightPanel';
 import EditorCanvas from './components/canvas/EditorCanvas';
+import { getTextBoxWidth } from './utils/textLayout';
 
 const API_URL = 'http://localhost:5000';
 const LOCAL_DRAFT_KEY = 'webnexEditor:draft';
@@ -150,10 +151,11 @@ const createGraphicElements = (variant, templateSize) => {
 const normalizeTextElement = (element) => {
   if (!element || element.type !== 'text') return element;
 
-  const width = Number(element.width) || 300;
   const fontSize = Math.max(8, Number(element.fontSize) || 20);
   const lineHeight = Number(element.lineHeight) || 1.2;
   const letterSpacing = Number(element.letterSpacing) || 0;
+  const requestedWidth = Number(element.width);
+  const hasRequestedWidth = Number.isFinite(requestedWidth) && requestedWidth > 0;
 
   const textNode = new Konva.Text({
     text: element.text || ' ',
@@ -167,11 +169,14 @@ const normalizeTextElement = (element) => {
   });
 
   const naturalWidth = Math.ceil(textNode.width());
-  const finalWidth = element.width ? Math.min(element.width, naturalWidth) : naturalWidth;
+  const finalWidth = hasRequestedWidth ? Math.min(requestedWidth, naturalWidth) : naturalWidth;
+  const renderWidth = getTextBoxWidth(finalWidth);
+  textNode.width(renderWidth);
+  textNode.wrap('word');
 
   return {
     ...element,
-    width: Math.max(5, finalWidth),
+    width: renderWidth,
     height: Math.max(fontSize, Math.ceil(textNode.height())),
     lineHeight,
     letterSpacing,
@@ -187,7 +192,7 @@ const escapeSvgText = (value = '') => value
 
 const getSvgTextLayout = (element) => {
   const fontSize = Math.max(8, Number(element.fontSize) || 20);
-  const width = Number(element.width) || 300;
+  const width = getTextBoxWidth(element.width);
   const lineHeight = Number(element.lineHeight) || 1.2;
   const letterSpacing = Number(element.letterSpacing) || 0;
 
@@ -575,7 +580,7 @@ function App() {
 
       } else if (el.type === 'text') {
         return { ...common, type: 'textbox',
-          left: el.x, top: el.y, width: el.width || 300,
+          left: el.x, top: el.y, width: getTextBoxWidth(el.width),
           text: el.text, fontSize: el.fontSize,
           fontFamily: el.fontFamily || 'Arial', fill: el.fill,
           fontWeight: el.isBold ? 'bold' : 'normal',
@@ -994,8 +999,9 @@ function App() {
         setLastUpdated(draft.savedAt);
       }
 
-      setElements(draft.elements);
-      setHistory([draft.elements]);
+      const normalizedDraftElements = draft.elements.map((element) => normalizeTextElement(element));
+      setElements(normalizedDraftElements);
+      setHistory([normalizedDraftElements]);
       setHistoryStep(0);
       setSelectedId(null);
     } catch (error) {

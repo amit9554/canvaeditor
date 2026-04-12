@@ -3,6 +3,7 @@ import Konva from 'konva';
 import { Text, Rect, Circle, Ellipse, RegularPolygon, Line, Star, Path, Image as KonvaImage, Transformer, Group, Arrow } from 'react-konva';
 import { Html } from 'react-konva-utils';
 import { Copy, Trash, Lock, Unlock, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Minus, Plus } from 'lucide-react';
+import { getTextBoxWidth } from '../../utils/textLayout';
 
 const transformTextCase = (text, mode) => {
   const value = `${text || ''}`;
@@ -212,10 +213,15 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     });
 
     const naturalWidth = Math.ceil(textNode.width());
-    const finalWidth = incomingProps.width ? Math.min(incomingProps.width, naturalWidth) : naturalWidth;
+    const requestedWidth = Number(incomingProps.width);
+    const hasRequestedWidth = Number.isFinite(requestedWidth) && requestedWidth > 0;
+    const finalWidth = hasRequestedWidth ? Math.min(requestedWidth, naturalWidth) : naturalWidth;
+    const renderWidth = getTextBoxWidth(finalWidth);
+    textNode.width(renderWidth);
+    textNode.wrap('word');
 
     return {
-      width: Math.max(5, finalWidth),
+      width: renderWidth,
       height: Math.max(incomingProps.fontSize || 20, Math.ceil(textNode.height())),
     };
   };
@@ -604,7 +610,7 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
              return textCommonProps;
            })()}
            text={isEditingText ? draftText : shapeProps.text} 
-           width={Math.max(120, shapeProps.width || 180)}
+           width={getTextBoxWidth(shapeProps.width)}
            fontSize={shapeProps.fontSize} 
            fontFamily={shapeProps.fontFamily} 
            fill={shapeProps.fill} 
@@ -685,7 +691,7 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
             autoCorrect="off"
             className="resize-none overflow-hidden bg-transparent px-0 py-0 outline-none selection:bg-transparent selection:text-transparent"
             style={{
-              width: `${shapeProps.width || 180}px`,
+              width: `${getTextBoxWidth(shapeProps.width)}px`,
               minHeight: `${Math.max(48, shapeProps.height || (shapeProps.fontSize || 20) + 16)}px`,
               fontSize: `${shapeProps.fontSize || 20}px`,
               fontFamily: shapeProps.fontFamily || 'Arial',
