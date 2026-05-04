@@ -112,6 +112,22 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     });
   };
 
+  const handleTransform = (e) => {
+    const node = shapeRef.current;
+    if (shapeProps.type === 'text') {
+      const scaleX = node.scaleX();
+      const anchor = trRef.current?.getActiveAnchor();
+      
+      // If it's a side handle, update width and reset scale in real-time for wrapping effect
+      if (anchor === 'middle-right' || anchor === 'middle-left') {
+        const newWidth = Math.max(5, node.width() * scaleX);
+        node.width(newWidth);
+        node.scaleX(1);
+        node.scaleY(1);
+      }
+    }
+  };
+
   const handleTransformEnd = (e) => {
     const node = shapeRef.current;
     let newProps = {
@@ -122,14 +138,32 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     };
 
     if (shapeProps.type === 'text') {
-      newProps.scaleX = node.scaleX();
-      newProps.scaleY = node.scaleY();
+      const scaleX = node.scaleX();
+      const anchor = trRef.current?.getActiveAnchor();
+      
+      // Reset scale to keep text sharp and maintain logic
+      node.scaleX(1);
+      node.scaleY(1);
+
+      const newWidth = Math.max(5, node.width() * scaleX);
+      let newFontSize = shapeProps.fontSize;
+
+      // If it's NOT a side handle, it's a corner handle drag -> update fontSize
+      if (anchor && anchor !== 'middle-right' && anchor !== 'middle-left') {
+        newFontSize = Math.round(shapeProps.fontSize * scaleX);
+      }
+      
+      newProps = {
+        ...newProps,
+        width: newWidth,
+        fontSize: newFontSize,
+      };
     } else {
       const baseWidth = shapeProps.width || node.width() || 1;
       const baseHeight = shapeProps.height || node.height() || 1;
       newProps.width = Math.max(5, baseWidth * node.scaleX());
       newProps.height = Math.max(5, baseHeight * node.scaleY());
-      // Reset scale after applying to width/height to avoid compounding scales
+      // Reset scale after applying to width/height
       node.scaleX(1);
       node.scaleY(1);
     }
@@ -188,8 +222,9 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
     onTap: onSelect,
     ref: shapeRef,
     ...shapeProps,
-    draggable: isSelected && !shapeProps.isLocked,
+    draggable: !shapeProps.isLocked,
     onDragEnd: handleDragEnd,
+    onTransform: handleTransform,
     onTransformEnd: handleTransformEnd,
   };
 
@@ -272,11 +307,37 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
   }, [draftText, isEditingText, shapeProps.fontSize, shapeProps.width]);
 
   const shadowProps = {
-    shadowColor: '#0f172a',
+    shadowColor: shapeProps.shadowColor || '#000000',
     shadowBlur: shapeProps.shadowBlur || 0,
-    shadowOpacity: shapeProps.shadowBlur ? (shapeProps.shadowOpacity ?? 0.25) : 0,
-    shadowOffsetX: 0,
-    shadowOffsetY: shapeProps.shadowBlur ? Math.max(2, Math.round((shapeProps.shadowBlur || 0) / 4)) : 0,
+    shadowOffset: { x: shapeProps.shadowOffsetX || 0, y: shapeProps.shadowOffsetY || 0 },
+    shadowOpacity: shapeProps.shadowOpacity ?? 0.25,
+  };
+
+  const strokeProps = {
+    stroke: shapeProps.strokeColor || '#ffffff',
+    strokeWidth: shapeProps.strokeWidth || 0,
+    dash: shapeProps.dashStyle === 'dashed' ? [10, 10] : shapeProps.dashStyle === 'dotted' ? [2, 5] : undefined,
+    listening: false
+  };
+
+  const getImageFilters = () => {
+    const filters = [];
+    if (shapeProps.blurRadius > 0) filters.push(Konva.Filters.Blur);
+    if (shapeProps.brightness !== undefined && shapeProps.brightness !== 0) filters.push(Konva.Filters.Brighten);
+    if (shapeProps.contrast !== undefined && shapeProps.contrast !== 0) filters.push(Konva.Filters.Contrast);
+    if (shapeProps.saturation !== undefined && shapeProps.saturation !== 0) filters.push(Konva.Filters.HSL);
+    if (shapeProps.grayscale) filters.push(Konva.Filters.Grayscale);
+    if (shapeProps.invert) filters.push(Konva.Filters.Invert);
+    if (shapeProps.sepia) filters.push(Konva.Filters.Sepia);
+    return filters;
+  };
+
+  const filterProps = {
+    filters: getImageFilters(),
+    blurRadius: shapeProps.blurRadius || 0,
+    brightness: (shapeProps.brightness || 0) / 100,
+    contrast: (shapeProps.contrast || 0) / 100,
+    saturation: (shapeProps.saturation || 0),
   };
 
   const updateTextCase = (mode) => {
@@ -350,25 +411,13 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
   };
 
   const renderImageNode = () => {
-    if (!image) return null;
+    // If no image and no special mask, we don't render an image node
+    if (!image && !shapeProps.maskPath && !shapeProps.maskShape) return null;
+    
     const crop = shapeProps.imageFit === 'cover' ? getImageCrop() : undefined;
 
-    const imageNode = (
-      <KonvaImage
-        {...commonProps}
-        image={image}
-        width={shapeProps.width}
-        height={shapeProps.height}
-        opacity={shapeProps.opacity ?? 1}
-        cornerRadius={shapeProps.maskShape === 'rounded' ? (shapeProps.cornerRadius || 24) : shapeProps.maskShape === 'circle' ? Math.min(shapeProps.width, shapeProps.height) / 2 : (shapeProps.cornerRadius || 0)}
-        crop={crop}
-        {...shadowProps}
-        filters={shapeProps.blurRadius > 0 ? [Konva.Filters.Blur] : []}
-        blurRadius={shapeProps.blurRadius || 0}
-      />
-    );
-
-    if (shapeProps.maskShape === 'circle') {
+    // Handle Stylish Frames (SVG Mask Paths)
+    if (shapeProps.maskPath) {
       return (
         <Group
           x={shapeProps.x}
@@ -376,42 +425,164 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
           rotation={shapeProps.rotation || 0}
           scaleX={shapeProps.scaleX || 1}
           scaleY={shapeProps.scaleY || 1}
-          draggable={isSelected && !shapeProps.isLocked}
+          draggable={!shapeProps.isLocked}
           onClick={onSelect}
           onTap={onSelect}
           onDragEnd={handleDragEnd}
+          onTransformEnd={handleTransformEnd}
+          onTransform={handleTransform}
           ref={shapeRef}
-          clipFunc={(ctx) => {
-            const radius = Math.min(shapeProps.width, shapeProps.height) / 2;
-            ctx.beginPath();
-            ctx.arc(shapeProps.width / 2, shapeProps.height / 2, radius, 0, Math.PI * 2, false);
-          }}
         >
+          <Group
+            clipFunc={(ctx) => {
+              const p = new Path2D(shapeProps.maskPath);
+              ctx.save();
+              ctx.scale(shapeProps.width / 100, shapeProps.height / 100);
+              ctx.fill(p);
+              ctx.restore();
+            }}
+          >
+            {image ? (
+              <KonvaImage
+                image={image}
+                width={shapeProps.width}
+                height={shapeProps.height}
+                opacity={shapeProps.opacity ?? 1}
+                crop={crop}
+                {...shadowProps}
+                {...filterProps}
+                onUpdate={(node) => {
+                  if (filterProps.filters.length > 0) node.cache();
+                  else node.clearCache();
+                }}
+              />
+            ) : (
+              <Group>
+                 <Rect width={shapeProps.width} height={shapeProps.height} fill={shapeProps.fill || '#f1f5f9'} />
+                 <Path 
+                    data="M0,80 Q40,60 80,90 T160,70 L160,160 L0,160 Z" 
+                    fill="#cbd5e1" 
+                    scaleX={shapeProps.width / 160} 
+                    scaleY={shapeProps.height / 160} 
+                    y={shapeProps.height / 4}
+                />
+                <Circle 
+                    x={shapeProps.width * 0.7} 
+                    y={shapeProps.height * 0.3} 
+                    radius={shapeProps.width * 0.1} 
+                    fill="#e2e8f0" 
+                />
+                <Text 
+                    text="Drop image" 
+                    width={shapeProps.width} 
+                    y={shapeProps.height / 2 - 5} 
+                    align="center" 
+                    fontSize={Math.max(10, shapeProps.width / 10)} 
+                    fontStyle="bold" 
+                    fill="#64748b" 
+                />
+              </Group>
+            )}
+          </Group>
+
+          {(shapeProps.strokeWidth || 0) > 0 && (
+             <Path
+               data={shapeProps.maskPath}
+               scaleX={shapeProps.width / 100}
+               scaleY={shapeProps.height / 100}
+               {...strokeProps}
+               strokeWidth={(shapeProps.strokeWidth || 0) / (shapeProps.width / 100)}
+             />
+          )}
+
+          <Path 
+            data={shapeProps.maskPath}
+            scaleX={shapeProps.width / 100}
+            scaleY={shapeProps.height / 100}
+            fill="transparent"
+            hitStrokeWidth={10}
+          />
+        </Group>
+      );
+    }
+
+    // Handle maskShape (circle, rounded) or regular image
+    return (
+      <Group
+        x={shapeProps.x}
+        y={shapeProps.y}
+        rotation={shapeProps.rotation || 0}
+        scaleX={shapeProps.scaleX || 1}
+        scaleY={shapeProps.scaleY || 1}
+        draggable={!shapeProps.isLocked}
+        onClick={onSelect}
+        onTap={onSelect}
+        onDragEnd={handleDragEnd}
+        onTransformEnd={handleTransformEnd}
+        onTransform={handleTransform}
+        ref={shapeRef}
+        clipFunc={shapeProps.maskShape === 'circle' ? (ctx) => {
+          const radius = Math.min(shapeProps.width, shapeProps.height) / 2;
+          ctx.beginPath();
+          ctx.arc(shapeProps.width / 2, shapeProps.height / 2, radius, 0, Math.PI * 2, false);
+        } : undefined}
+      >
+        {image ? (
           <KonvaImage
             image={image}
             width={shapeProps.width}
             height={shapeProps.height}
             opacity={shapeProps.opacity ?? 1}
+            cornerRadius={shapeProps.maskShape === 'rounded' ? (shapeProps.cornerRadius || 24) : 0}
             crop={crop}
             {...shadowProps}
-            filters={shapeProps.blurRadius > 0 ? [Konva.Filters.Blur] : []}
-            blurRadius={shapeProps.blurRadius || 0}
+            {...filterProps}
+            onUpdate={(node) => {
+               if (filterProps.filters.length > 0) node.cache();
+               else node.clearCache();
+            }}
           />
-          {(shapeProps.strokeWidth || 0) > 0 && (
-            <Circle
-              x={shapeProps.width / 2}
-              y={shapeProps.height / 2}
-              radius={Math.min(shapeProps.width, shapeProps.height) / 2 - (shapeProps.strokeWidth || 0) / 2}
-              stroke={shapeProps.strokeColor || '#ffffff'}
-              strokeWidth={shapeProps.strokeWidth || 0}
-              listening={false}
+        ) : (
+          <Group>
+            <Rect 
+              width={shapeProps.width} 
+              height={shapeProps.height} 
+              fill={shapeProps.fill || '#f1f5f9'} 
+              cornerRadius={shapeProps.maskShape === 'rounded' ? (shapeProps.cornerRadius || 24) : 0} 
             />
-          )}
-        </Group>
-      );
-    }
-
-    return imageNode;
+            <Text 
+                text={shapeProps.maskShape ? `${shapeProps.maskShape} Frame` : "Image Frame"}
+                width={shapeProps.width} 
+                y={shapeProps.height / 2 - 10} 
+                align="center" 
+                fontSize={Math.max(10, shapeProps.width / 12)} 
+                fontStyle="bold" 
+                fill="#94a3b8" 
+            />
+          </Group>
+        )}
+        
+        {(shapeProps.strokeWidth || 0) > 0 && (
+          <React.Fragment>
+            {shapeProps.maskShape === 'circle' ? (
+              <Circle
+                x={shapeProps.width / 2}
+                y={shapeProps.height / 2}
+                radius={Math.min(shapeProps.width, shapeProps.height) / 2 - (shapeProps.strokeWidth || 0) / 2}
+                {...strokeProps}
+              />
+            ) : (
+              <Rect
+                width={shapeProps.width}
+                height={shapeProps.height}
+                cornerRadius={shapeProps.maskShape === 'rounded' ? (shapeProps.cornerRadius || 24) : 0}
+                {...strokeProps}
+              />
+            )}
+          </React.Fragment>
+        )}
+      </Group>
+    );
   };
 
   const renderPhotoFrameNode = () => {
@@ -433,7 +604,7 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
         rotation={shapeProps.rotation || 0}
         scaleX={shapeProps.scaleX || 1}
         scaleY={shapeProps.scaleY || 1}
-        draggable={isSelected && !shapeProps.isLocked}
+        draggable={!shapeProps.isLocked}
         onClick={onSelect}
         onTap={onSelect}
         onDragEnd={handleDragEnd}
@@ -580,28 +751,28 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
   return (
     <React.Fragment>
       {shapeProps.type === 'rectangle' && (
-        <Rect {...commonProps} cornerRadius={shapeProps.cornerRadius || 0} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <Rect {...commonProps} cornerRadius={shapeProps.cornerRadius || 0} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'circle' && (
-        <Circle {...commonProps} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <Circle {...commonProps} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'ellipse' && (
-        <Ellipse {...commonProps} radiusX={shapeProps.width / 2} radiusY={shapeProps.height / 2} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <Ellipse {...commonProps} radiusX={shapeProps.width / 2} radiusY={shapeProps.height / 2} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'triangle' && (
-        <RegularPolygon {...commonProps} sides={3} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <RegularPolygon {...commonProps} sides={3} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'hexagon' && (
-        <RegularPolygon {...commonProps} sides={6} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <RegularPolygon {...commonProps} sides={6} radius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'star' && (
-        <Star {...commonProps} numPoints={5} innerRadius={shapeProps.width / 4} outerRadius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+        <Star {...commonProps} numPoints={5} innerRadius={shapeProps.width / 4} outerRadius={shapeProps.width / 2} opacity={shapeProps.opacity ?? 1} {...strokeProps} {...shadowProps} />
       )}
       {shapeProps.type === 'line' && (
-        <Line {...commonProps} points={[0, 0, shapeProps.width, 0]} stroke={shapeProps.fill} strokeWidth={Math.max(2, shapeProps.height / 10)} opacity={shapeProps.opacity ?? 1} />
+        <Line {...commonProps} points={[0, 0, shapeProps.width, 0]} stroke={shapeProps.fill} strokeWidth={Math.max(2, shapeProps.height / 10)} opacity={shapeProps.opacity ?? 1} dash={strokeProps.dash} />
       )}
       {shapeProps.type === 'arrow' && (
-        <Arrow {...commonProps} points={[0, shapeProps.height / 2, shapeProps.width, shapeProps.height / 2]} stroke={shapeProps.fill} fill={shapeProps.fill} strokeWidth={Math.max(2, shapeProps.height / 3)} pointerLength={shapeProps.pointerLength || 28} pointerWidth={shapeProps.pointerWidth || 24} opacity={shapeProps.opacity ?? 1} {...shadowProps} />
+        <Arrow {...commonProps} points={[0, shapeProps.height / 2, shapeProps.width, shapeProps.height / 2]} stroke={shapeProps.fill} fill={shapeProps.fill} strokeWidth={Math.max(2, shapeProps.height / 3)} pointerLength={shapeProps.pointerLength || 28} pointerWidth={shapeProps.pointerWidth || 24} opacity={shapeProps.opacity ?? 1} dash={strokeProps.dash} {...shadowProps} />
       )}
       {shapeProps.type === 'text' && (
          <Text
@@ -622,13 +793,14 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
            opacity={shapeProps.opacity ?? 1}
            stroke={shapeProps.strokeColor}
            strokeWidth={shapeProps.strokeWidth || 0}
+           hitStrokeWidth={10}
            onDblClick={startInlineEditing}
            onDblTap={startInlineEditing}
            {...shadowProps}
          />
       )}
       {shapeProps.type === 'path' && (
-         <Path {...commonProps} data={shapeProps.data} fill={shapeProps.fill} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} {...shadowProps} />
+         <Path {...commonProps} data={shapeProps.data} fill={shapeProps.fill} opacity={shapeProps.opacity ?? 1} stroke={shapeProps.strokeColor} strokeWidth={shapeProps.strokeWidth || 0} hitStrokeWidth={10} {...shadowProps} />
       )}
       {['image', 'profileImage'].includes(shapeProps.type) && renderImageNode()}
       {shapeProps.type === 'photoFrame' && renderPhotoFrameNode()}
@@ -648,6 +820,11 @@ export const ElementNode = ({ shapeProps, isSelected, onSelect, onChange, onDele
       {isSelected && !shapeProps.isLocked && !isEditingText && (
         <Transformer
           ref={trRef}
+          enabledAnchors={
+            shapeProps.type === 'text'
+              ? ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'middle-left', 'middle-right']
+              : ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top-center', 'bottom-center', 'middle-left', 'middle-right']
+          }
           boundBoxFunc={(oldBox, newBox) => {
             if (newBox.width < 5 || newBox.height < 5) return oldBox;
             return newBox;

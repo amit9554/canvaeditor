@@ -16,10 +16,12 @@ export default function TopToolbar({
   canUndo,
   canRedo,
   onLoadJSON,
+  onImportSVG,
   onDownloadFabricJSON,
   lastUpdated
 }) {
   const jsonInputRef = useRef(null);
+  const svgInputRef = useRef(null);
 
   const formatLastUpdated = (timestamp) => {
     if (!timestamp) return '';
@@ -36,7 +38,15 @@ export default function TopToolbar({
     const file = e.target.files[0];
     if (file) {
       onLoadJSON(file);
-      e.target.value = ''; // reset so same file can be re-uploaded
+      e.target.value = '';
+    }
+  };
+
+  const handleSVGFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      onImportSVG(file);
+      e.target.value = '';
     }
   };
 
@@ -159,7 +169,21 @@ export default function TopToolbar({
             onClick={() => jsonInputRef.current?.click()}
             className="flex items-center gap-2 px-3 py-1.5 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors text-xs font-semibold"
           >
-            <Upload size={14} /> Upload
+            <Upload size={14} /> JSON
+          </button>
+
+          <input
+            ref={svgInputRef}
+            type="file"
+            accept=".svg"
+            className="hidden"
+            onChange={handleSVGFileChange}
+          />
+          <button
+            onClick={() => svgInputRef.current?.click()}
+            className="flex items-center gap-2 px-3 py-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors text-xs font-semibold"
+          >
+            <ImageIcon size={14} /> Import SVG
           </button>
 
           <button

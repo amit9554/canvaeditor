@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, Minus, Plus, Copy, Trash, Lock, Unlock } from 'lucide-react';
+import { Bold, Italic, AlignLeft, AlignCenter, AlignRight, Minus, Plus, Copy, Trash, Lock, Unlock, FlipHorizontal, FlipVertical } from 'lucide-react';
 
 const FONT_FAMILIES = [
   { label: 'Poppins', value: "'Poppins', sans-serif" },
@@ -118,7 +118,44 @@ export default function FloatingToolbar({ selectedElement, onChange, onDelete, o
       )}
 
       {/* Common tools */}
+      {/* Common tools */}
       <div className="flex items-center gap-1 px-1">
+        {/* Opacity Control */}
+        <div className="flex items-center bg-slate-100/50 rounded-lg p-0.5 mr-1 group/opacity relative">
+            <button className="w-7 h-7 flex items-center justify-center rounded-md text-slate-500">
+                <span className="text-[10px] font-bold">{(selectedElement.opacity ?? 1) * 100}%</span>
+            </button>
+            <div className="hidden group-hover/opacity:flex absolute top-10 left-0 bg-white shadow-xl border border-slate-100 rounded-lg p-3 z-[110] flex-col gap-2 min-w-[120px]">
+                <div className="text-[10px] font-bold text-slate-400 uppercase">Opacity</div>
+                <input 
+                    type="range" min="0" max="1" step="0.01" 
+                    value={selectedElement.opacity ?? 1} 
+                    onChange={(e) => onChange({...selectedElement, opacity: parseFloat(e.target.value)})}
+                    className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                />
+            </div>
+        </div>
+
+        {/* Blur Control (for images/shapes) */}
+        {['image', 'profileImage', 'photoFrame', 'rectangle', 'circle', 'ellipse', 'hexagon', 'star'].includes(selectedElement.type) && (
+            <div className="flex items-center bg-slate-100/50 rounded-lg p-0.5 mr-1 group/blur relative">
+                <button className="w-7 h-7 flex items-center justify-center rounded-md text-slate-500">
+                    <span className="text-[10px] font-bold">{selectedElement.blurRadius || 0}px</span>
+                </button>
+                <div className="hidden group-hover/blur:flex absolute top-10 left-0 bg-white shadow-xl border border-slate-100 rounded-lg p-3 z-[110] flex-col gap-2 min-w-[120px]">
+                    <div className="text-[10px] font-bold text-slate-400 uppercase">Blur</div>
+                    <input 
+                        type="range" min="0" max="40" step="1" 
+                        value={selectedElement.blurRadius || 0} 
+                        onChange={(e) => onChange({...selectedElement, blurRadius: parseInt(e.target.value)})}
+                        className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                    />
+                </div>
+            </div>
+        )}
+
+        <div className="w-px h-5 bg-slate-200 mx-0.5"></div>
+
         {/* Color Picker */}
         {['text', 'rectangle', 'circle', 'triangle', 'star', 'path', 'ellipse', 'hexagon'].includes(selectedElement.type) && (
           <div className="relative group mr-1">
@@ -132,6 +169,26 @@ export default function FloatingToolbar({ selectedElement, onChange, onDelete, o
             </div>
           </div>
         )}
+
+        <div className="w-px h-5 bg-slate-200 mx-0.5"></div>
+
+        {/* Flip group */}
+        <div className="flex items-center gap-0.5 px-1">
+            <button 
+                onClick={() => onChange({...selectedElement, scaleX: (selectedElement.scaleX || 1) * -1})} 
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-all"
+                title="Flip Horizontal"
+            >
+                <FlipHorizontal size={15} />
+            </button>
+            <button 
+                onClick={() => onChange({...selectedElement, scaleY: (selectedElement.scaleY || 1) * -1})} 
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100 transition-all"
+                title="Flip Vertical"
+            >
+                <FlipVertical size={15} />
+            </button>
+        </div>
 
         <div className="w-px h-5 bg-slate-200 mx-0.5"></div>
 

@@ -1,5 +1,9 @@
 import React, { useRef } from 'react';
-import { ArrowUp, ArrowDown, Trash, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Copy, Image as ImageIcon, Eraser, Upload, Plus } from 'lucide-react';
+import { ArrowUp, ArrowDown, Trash, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Copy, Image as ImageIcon, Eraser, Upload, Plus, Frame, Scissors } from 'lucide-react';
+import { SHAPE_DIVIDERS } from '../../utils/dividers';
+import { FRAME_SHAPES } from '../../utils/frames';
+
+const SHAPE_TOOLS_LIST = ['rectangle', 'circle', 'ellipse', 'triangle', 'hexagon', 'star'];
 
 const transformTextCase = (text, mode) => {
   const value = `${text || ''}`;
@@ -406,60 +410,71 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
           </div>
         )}
 
-        {['rectangle', 'circle', 'ellipse', 'triangle', 'hexagon', 'star', 'line', 'arrow'].includes(selectedElement.type) && (
+        {([...SHAPE_TOOLS_LIST, 'line', 'arrow'].includes(selectedElement.type) || (selectedElement.type === 'image' && selectedElement.maskPath)) && (
           <div className="space-y-4">
             <div className="space-y-1">
-              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">{['line', 'arrow'].includes(selectedElement.type) ? 'Stroke Color' : 'Fill Color'}</label>
+              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+                {['line', 'arrow'].includes(selectedElement.type) ? 'Stroke Color' : (selectedElement.maskPath ? 'Frame Background' : 'Fill Color')}
+              </label>
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 border border-gray-200 rounded-md flex items-center justify-center p-1 overflow-hidden hover:border-gray-300 transition-colors">
                   <input 
                     type="color"
                     name="fill"
-                    value={selectedElement.fill || '#3B82F6'}
+                    value={selectedElement.fill || (selectedElement.maskPath ? '#e2e8f0' : '#3B82F6')}
                     onChange={handleChange}
                     className="w-[150%] h-[150%] cursor-pointer border-none p-0 outline-none"
                   />
                 </div>
-                <span className="text-sm font-mono text-gray-600 uppercase bg-gray-50 px-2 py-1 rounded border border-gray-100">{selectedElement.fill || '#3B82F6'}</span>
+                <span className="text-sm font-mono text-gray-600 uppercase bg-gray-50 px-2 py-1 rounded border border-gray-100">{selectedElement.fill || (selectedElement.maskPath ? '#e2e8f0' : '#3B82F6')}</span>
               </div>
             </div>
 
             {!['line', 'arrow'].includes(selectedElement.type) && (
               <div className="space-y-1 pt-2">
-                 <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Border Color (Stroke)</label>
+                 <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">
+                   {selectedElement.maskPath ? 'Frame Border' : 'Border Color (Stroke)'}
+                 </label>
                  <div className="flex items-center gap-3">
                    <div className="h-10 w-10 border border-gray-200 rounded-md flex items-center justify-center p-1 overflow-hidden hover:border-gray-300 transition-colors">
                      <input 
                        type="color"
                        name="strokeColor"
-                       value={selectedElement.strokeColor || '#000000'}
+                       value={selectedElement.strokeColor || (selectedElement.maskPath ? '#ffffff' : '#000000')}
                        onChange={handleChange}
                        className="w-[150%] h-[150%] cursor-pointer border-none p-0 outline-none"
                      />
                    </div>
-                   <span className="text-sm font-mono text-gray-600 uppercase bg-gray-50 px-2 py-1 rounded border border-gray-100">{selectedElement.strokeColor || '#000000'}</span>
+                   <span className="text-sm font-mono text-gray-600 uppercase bg-gray-50 px-2 py-1 rounded border border-gray-100">{selectedElement.strokeColor || (selectedElement.maskPath ? '#ffffff' : '#000000')}</span>
                  </div>
               </div>
             )}
             
-            {!['line', 'arrow'].includes(selectedElement.type) && (
-              <div className="space-y-1">
-                 <div className="flex justify-between items-center mb-1">
-                   <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Border Width</label>
-                   <span className="text-[10px] text-gray-500 font-medium">{selectedElement.strokeWidth || 0}px</span>
-                 </div>
-                 <input 
-                   type="range"
-                   name="strokeWidth"
-                   min="0"
-                   max="40"
-                   step="1"
-                   value={selectedElement.strokeWidth || 0}
-                   onChange={handleChange}
-                   className="w-full accent-primary"
-                 />
+             <div className="space-y-1">
+                <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Border Style</label>
+                <div className="flex bg-gray-100 p-1 rounded-md">
+                   <button onClick={() => handleAssign('dashStyle', 'solid')} className={`flex-1 py-1 text-[10px] font-bold rounded transition ${(!selectedElement.dashStyle || selectedElement.dashStyle === 'solid') ? 'bg-white shadow-sm text-primary' : 'text-gray-500'}`}>Solid</button>
+                   <button onClick={() => handleAssign('dashStyle', 'dashed')} className={`flex-1 py-1 text-[10px] font-bold rounded transition ${selectedElement.dashStyle === 'dashed' ? 'bg-white shadow-sm text-primary' : 'text-gray-500'}`}>Dash</button>
+                   <button onClick={() => handleAssign('dashStyle', 'dotted')} className={`flex-1 py-1 text-[10px] font-bold rounded transition ${selectedElement.dashStyle === 'dotted' ? 'bg-white shadow-sm text-primary' : 'text-gray-500'}`}>Dot</button>
+                </div>
+             </div>
+
+             <div className="space-y-1">
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Border Width</label>
+                    <span className="text-[10px] text-gray-500 font-medium">{selectedElement.strokeWidth || 0}px</span>
+                  </div>
+                  <input 
+                    type="range"
+                    name="strokeWidth"
+                    min="0"
+                    max="40"
+                    step="1"
+                    value={selectedElement.strokeWidth || 0}
+                    onChange={handleChange}
+                    className="w-full accent-primary"
+                  />
               </div>
-            )}
             
             {selectedElement.type === 'rectangle' && (
               <div className="space-y-1">
@@ -533,18 +548,102 @@ export default function RightPanel({ selectedElement, onChange, onLayerChange, o
               <input type="range" name="cornerRadius" min="0" max="150" step="1" value={selectedElement.cornerRadius || 0} onChange={handleChange} className="w-full accent-primary" />
             </div>
 
+            <div className="pt-2 pb-2 border-t border-b border-gray-100">
+               <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase mb-3 block">Image Filters</label>
+               <div className="space-y-4">
+                  {[
+                    { name: 'brightness', label: 'Brightness', min: -100, max: 100 },
+                    { name: 'contrast', label: 'Contrast', min: -100, max: 100 },
+                    { name: 'saturation', label: 'Saturation', min: -2, max: 2, step: 0.1 }
+                  ].map(f => (
+                    <div key={f.name} className="space-y-1">
+                      <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase">
+                        <span>{f.label}</span>
+                        <span>{selectedElement[f.name] || 0}</span>
+                      </div>
+                      <input 
+                        type="range" name={f.name} min={f.min} max={f.max} step={f.step || 1} 
+                        value={selectedElement[f.name] || 0} onChange={handleChange}
+                        className="w-full h-1 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-sky-500"
+                      />
+                    </div>
+                  ))}
+                  <div className="grid grid-cols-3 gap-2">
+                     {[
+                       { name: 'grayscale', label: 'Gray' },
+                       { name: 'sepia', label: 'Sepia' },
+                       { name: 'invert', label: 'Invert' }
+                     ].map(f => (
+                       <button 
+                         key={f.name}
+                         onClick={() => handleToggle(f.name)}
+                         className={`py-1.5 px-2 rounded-md text-[10px] font-bold transition-all border ${selectedElement[f.name] ? 'bg-sky-50 border-sky-200 text-sky-600' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                       >
+                         {f.label}
+                       </button>
+                     ))}
+                  </div>
+               </div>
+            </div>
+
             <div className="space-y-1">
               <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase">Mask Shape</label>
               <select
                 name="maskShape"
                 value={selectedElement.maskShape || 'none'}
-                onChange={handleChange}
+                onChange={(e) => {
+                  if (e.target.value === 'none') {
+                    onChange({ ...selectedElement, maskShape: 'none', maskPath: null });
+                  } else {
+                    onChange({ ...selectedElement, maskShape: e.target.value, maskPath: null });
+                  }
+                }}
                 className="w-full border border-gray-200 rounded-md p-2 text-sm bg-white"
               >
                 <option value="none">None</option>
                 <option value="rounded">Rounded Rectangle</option>
                 <option value="circle">Circle Frame</option>
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase flex items-center gap-1">
+                 <Scissors size={12} className="text-primary" /> Stylish Masks
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                 {FRAME_SHAPES.slice(0, 8).map(frame => (
+                   <button 
+                     key={frame.id}
+                     onClick={() => onChange({ ...selectedElement, maskPath: frame.path, maskShape: null })}
+                     className={`aspect-square rounded-md border flex items-center justify-center p-1 transition-all ${selectedElement.maskPath === frame.path ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300 bg-gray-50'}`}
+                     title={frame.name}
+                   >
+                     <svg viewBox={frame.viewBox} className="w-full h-full text-gray-400 fill-current">
+                       <path d={frame.path} />
+                     </svg>
+                   </button>
+                 ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-gray-700 uppercase flex items-center gap-1">
+                 <Frame size={12} className="text-primary" /> Divider Masks
+              </label>
+              <div className="grid grid-cols-4 gap-2">
+                 {SHAPE_DIVIDERS.map(divider => (
+                   <button 
+                     key={divider.id}
+                     onClick={() => onChange({ ...selectedElement, maskPath: divider.path, maskShape: null })}
+                     className={`aspect-square rounded-md border flex items-center justify-center p-1 transition-all ${selectedElement.maskPath === divider.path ? 'border-primary bg-primary/5' : 'border-gray-100 hover:border-gray-300 bg-gray-50'}`}
+                     title={divider.name}
+                   >
+                     <svg viewBox={divider.viewBox} className="w-full h-full text-gray-400 fill-current">
+                       <path d={divider.path} />
+                     </svg>
+                   </button>
+                 ))}
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

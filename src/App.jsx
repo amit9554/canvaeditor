@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Konva from 'konva';
 import { v4 as uuidv4 } from 'uuid';
+import { parseSVG } from './utils/svgParser';
 import TopToolbar from './components/toolbar/TopToolbar';
 import LeftSidebar from './components/sidebar/LeftSidebar';
 import RightPanel from './components/panel/RightPanel';
@@ -169,7 +170,7 @@ const normalizeTextElement = (element) => {
   });
 
   const naturalWidth = Math.ceil(textNode.width());
-  const finalWidth = hasRequestedWidth ? Math.min(requestedWidth, naturalWidth) : naturalWidth;
+  const finalWidth = hasRequestedWidth ? requestedWidth : naturalWidth;
   const renderWidth = getTextBoxWidth(finalWidth);
   textNode.width(renderWidth);
   textNode.wrap('word');
@@ -288,11 +289,36 @@ function App() {
 
   const handleAddElement = (type, extraProps = {}) => {
     const id = uuidv4();
+    
+    // Feature: Apply frame to selected image if possible
+    // Only apply if the selected element is an image with a source
+    // If it's just a placeholder frame, we might want to add a new one instead of replacing
+    if (selectedId && extraProps.maskPath) {
+      const selected = elements.find(el => el.id === selectedId);
+      if (selected && ['image', 'profileImage', 'photoFrame'].includes(selected.type) && selected.src) {
+        handleChangeElement({
+          ...selected,
+          ...extraProps
+        });
+        return;
+      }
+    }
+
+    // Calculate centered position with slight offset if multiple items added at the same spot
+    const centerX = templateSize.width / 2;
+    const centerY = templateSize.height / 2;
+    
+    // Simple offset logic: check how many elements are at the default center
+    const existingAtCenter = elements.filter(el => 
+      Math.abs(el.x - (centerX - 50)) < 10 || Math.abs(el.x - (centerX - 150)) < 10
+    ).length;
+    const offset = (existingAtCenter % 10) * 20;
+
     const basePath = {
       id,
       type,
-      x: templateSize.width / 2 - 50,
-      y: templateSize.height / 2 - 50,
+      x: centerX - 50 + offset,
+      y: centerY - 50 + offset,
     };
     
     let props = {};
@@ -302,7 +328,7 @@ function App() {
         fontSize: 40,
         fontFamily: "'Poppins', sans-serif",
         fill: '#000000',
-        width: 320,
+        // width: 320,
         isBold: false,
         isItalic: false,
         align: 'left',
@@ -310,32 +336,40 @@ function App() {
         lineHeight: 1.15,
         letterSpacing: -0.4,
       };
-      basePath.x = templateSize.width / 2 - 150;
+      basePath.x = centerX - 150 + offset;
+      basePath.y = centerY - 25 + offset;
     } else if (type === 'rectangle') {
       props = { width: 200, height: 150, fill: '#3B82F6', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 100;
+      basePath.x = centerX - 100 + offset;
+      basePath.y = centerY - 75 + offset;
     } else if (type === 'circle') {
       props = { width: 150, height: 150, fill: '#ef4444', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 75;
+      basePath.x = centerX - 75 + offset;
+      basePath.y = centerY - 75 + offset;
     } else if (type === 'ellipse') {
       props = { width: 210, height: 130, fill: '#8B5CF6', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 105;
-      basePath.y = templateSize.height / 2 - 65;
+      basePath.x = centerX - 105 + offset;
+      basePath.y = centerY - 65 + offset;
     } else if (type === 'triangle') {
       props = { width: 150, height: 150, fill: '#10B981', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 75;
+      basePath.x = centerX - 75 + offset;
+      basePath.y = centerY - 75 + offset;
     } else if (type === 'hexagon') {
       props = { width: 170, height: 170, fill: '#14B8A6', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 85;
+      basePath.x = centerX - 85 + offset;
+      basePath.y = centerY - 85 + offset;
     } else if (type === 'star') {
       props = { width: 150, height: 150, fill: '#F59E0B', opacity: 1, strokeWidth: 0, shadowBlur: 0, shadowOpacity: 0.25 };
-      basePath.x = templateSize.width / 2 - 75;
+      basePath.x = centerX - 75 + offset;
+      basePath.y = centerY - 75 + offset;
     } else if (type === 'line') {
       props = { width: 300, height: 10, fill: '#1F2937', opacity: 1 };
-      basePath.x = templateSize.width / 2 - 150;
+      basePath.x = centerX - 150 + offset;
+      basePath.y = centerY - 5 + offset;
     } else if (type === 'arrow') {
       props = { width: 260, height: 24, fill: '#0F172A', opacity: 1, pointerLength: 28, pointerWidth: 24 };
-      basePath.x = templateSize.width / 2 - 130;
+      basePath.x = centerX - 130 + offset;
+      basePath.y = centerY - 12 + offset;
     } else if (type === 'image') {
       props = {
         width: 300,
@@ -352,7 +386,8 @@ function App() {
         shadowBlur: 0,
         shadowOpacity: 0.25,
       };
-      basePath.x = templateSize.width / 2 - 150;
+      basePath.x = centerX - 150 + offset;
+      basePath.y = centerY - 150 + offset;
     } else if (type === 'profileImage') {
       props = {
         width: 220,
@@ -372,7 +407,8 @@ function App() {
         shadowBlur: 16,
         shadowOpacity: 0.32,
       };
-      basePath.x = templateSize.width / 2 - 110;
+      basePath.x = centerX - 110 + offset;
+      basePath.y = centerY - 110 + offset;
     } else if (type === 'photoFrame') {
       props = {
         width: 260,
@@ -395,8 +431,8 @@ function App() {
         cornerRadius: extraProps.cornerRadius ?? 28,
         label: extraProps.label || 'Drop Photo',
       };
-      basePath.x = templateSize.width / 2 - 130;
-      basePath.y = templateSize.height / 2 - 160;
+      basePath.x = centerX - 130 + offset;
+      basePath.y = centerY - 160 + offset;
     }
 
     const nextElement = type === 'text' ? normalizeTextElement({ ...basePath, ...props, ...extraProps }) : { ...basePath, ...props, ...extraProps };
@@ -588,7 +624,7 @@ function App() {
           textAlign: el.align || 'left' };
 
       } else if (el.type === 'image' || el.type === 'photoFrame') {
-        return { ...common, type: 'image',
+        const obj = { ...common, type: 'image',
           left: el.x, top: el.y,
           width: el.width, height: el.height,
           src: el.src, crossOrigin: 'anonymous',
@@ -596,9 +632,21 @@ function App() {
           blurRadius: el.blurRadius || 0,
           imageFit: el.imageFit || 'fill',
           cornerRadius: el.cornerRadius || 0 };
+        
+        if (el.maskPath) {
+          obj.clipPath = {
+            type: 'path',
+            path: el.maskPath,
+            scaleX: el.width / 100,
+            scaleY: el.height / 100,
+            originX: 'left',
+            originY: 'top'
+          };
+        }
+        return obj;
 
       } else if (el.type === 'profileImage') {
-        return { ...common, type: 'image',
+        const obj = { ...common, type: 'image',
           left: el.x, top: el.y,
           width: el.width, height: el.height,
           src: el.src, crossOrigin: 'anonymous',
@@ -607,6 +655,18 @@ function App() {
           imageFit: el.imageFit || 'cover',
           cornerRadius: el.cornerRadius || 0,
           maskShape: el.maskShape || 'circle' };
+        
+        if (el.maskShape === 'circle') {
+          obj.clipPath = {
+            type: 'circle',
+            radius: Math.min(el.width, el.height) / 2,
+            originX: 'center',
+            originY: 'center',
+            left: el.width / 2,
+            top: el.height / 2
+          };
+        }
+        return obj;
 
       } else if (el.type === 'line') {
         return { ...common, type: 'line',
@@ -747,6 +807,18 @@ function App() {
     reader.readAsText(file);
   };
 
+  const handleImportSVG = (file) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const svgText = e.target.result;
+      const { elements: parsedElements, width, height } = parseSVG(svgText);
+      if (parsedElements.length > 0) {
+        handleAddElements(parsedElements, { width, height });
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleDownloadImage = () => {
     setSelectedId(null); // Unselect to hide transformers
     setTimeout(() => {
@@ -794,21 +866,33 @@ function App() {
           textAnchor = 'end';
         }
         const tspans = lines.map((line, i) => {
-          const y = i * fontSize * lineHeight;
+          // Adjust y based on font size and line height for better Illustrator compatibility
+          // Using dy instead of absolute y for the first line also helps
+          const y = (i + 0.8) * fontSize * lineHeight;
           return `<tspan x="${xOffset}" y="${y}">${escapeSvgText(line || ' ')}</tspan>`;
         }).join('');
-        content += `<text fill="${el.fill || '#000000'}" font-family="${(el.fontFamily || 'Arial').replace(/'/g, '')}" font-size="${fontSize}" font-weight="${el.isBold ? 'bold' : 'normal'}" font-style="${el.isItalic ? 'italic' : 'normal'}" text-anchor="${textAnchor}" dominant-baseline="hanging" xml:space="preserve" lengthAdjust="spacingAndGlyphs" ${letterSpacing ? `letter-spacing="${letterSpacing}"` : ''} ${opacityAttr} ${strokeAttr} transform="${transform}">${tspans}</text>`;
+        content += `<text fill="${el.fill || '#000000'}" font-family="${(el.fontFamily || 'Arial').replace(/'/g, '')}" font-size="${fontSize}" font-weight="${el.isBold ? 'bold' : 'normal'}" font-style="${el.isItalic ? 'italic' : 'normal'}" text-anchor="${textAnchor}" xml:space="preserve" ${letterSpacing ? `letter-spacing="${letterSpacing}"` : ''} ${opacityAttr} ${strokeAttr} transform="${transform}">${tspans}</text>`;
       } else if (el.type === 'image' || el.type === 'profileImage' || el.type === 'photoFrame') {
         let clipAttr = '';
         const useCircleMask = el.maskShape === 'circle';
+        const hasMaskPath = !!el.maskPath;
         const effectiveCornerRadius = el.type === 'photoFrame'
           ? (el.frameStyle === 'rounded' ? (el.cornerRadius || 28) : el.frameStyle === 'arch' ? Math.min(el.width, el.height) / 2 : 0)
           : el.cornerRadius;
-        if (effectiveCornerRadius || useCircleMask || el.height === el.width) {
+          
+        if (hasMaskPath || effectiveCornerRadius || useCircleMask || el.height === el.width) {
            const clipId = `clip-${index}`;
-           defs += useCircleMask
-             ? `<clipPath id="${clipId}"><circle cx="${el.width / 2}" cy="${el.height / 2}" r="${Math.min(el.width, el.height) / 2}" /></clipPath>`
-             : `<clipPath id="${clipId}"><rect width="${el.width}" height="${el.height}" rx="${effectiveCornerRadius || (el.height === el.width ? el.width/2 : 0)}" ry="${effectiveCornerRadius || (el.height === el.width ? el.height/2 : 0)}" /></clipPath>`;
+           let clipPathContent = '';
+           
+           if (hasMaskPath) {
+             clipPathContent = `<path d="${el.maskPath}" transform="scale(${el.width / 100}, ${el.height / 100})" />`;
+           } else if (useCircleMask) {
+             clipPathContent = `<circle cx="${el.width / 2}" cy="${el.height / 2}" r="${Math.min(el.width, el.height) / 2}" />`;
+           } else {
+             clipPathContent = `<rect width="${el.width}" height="${el.height}" rx="${effectiveCornerRadius || (el.height === el.width ? el.width/2 : 0)}" ry="${effectiveCornerRadius || (el.height === el.width ? el.height/2 : 0)}" />`;
+           }
+           
+           defs += `<clipPath id="${clipId}">${clipPathContent}</clipPath>`;
            clipAttr = `clip-path="url(#${clipId})"`;
         }
         const imageFilterAttr = el.blurRadius > 0 ? `filter="url(#img-blur-${index})"` : '';
@@ -816,7 +900,7 @@ function App() {
           defs += `<filter id="img-blur-${index}"><feGaussianBlur stdDeviation="${Math.max(0, el.blurRadius / 4)}" /></filter>`;
         }
         const preserveAspectRatio = el.imageFit === 'cover' ? 'xMidYMid slice' : el.imageFit === 'contain' ? 'xMidYMid meet' : 'none';
-        content += `<image href="${el.src}" width="${el.width}" height="${el.height}" preserveAspectRatio="${preserveAspectRatio}" ${opacityAttr} ${clipAttr} ${imageFilterAttr} transform="${transform}" />`;
+        content += `<image xlink:href="${el.src}" href="${el.src}" width="${el.width}" height="${el.height}" preserveAspectRatio="${preserveAspectRatio}" ${opacityAttr} ${clipAttr} ${imageFilterAttr} transform="${transform}" />`;
       } else if (el.type === 'ellipse') {
         content += `<ellipse cx="${el.width / 2}" cy="${el.height / 2}" rx="${el.width / 2}" ry="${el.height / 2}" fill="${el.fill}" ${opacityAttr} ${strokeAttr} transform="${transform}" />`;
       } else if (el.type === 'triangle') {
@@ -1077,6 +1161,7 @@ function App() {
         onDownloadSVG={handleDownloadSVG}
         onDownloadFabricSVG={handleDownloadFabricSVG}
         onDownloadImage={handleDownloadImage}
+        onImportSVG={handleImportSVG}
         onClear={handleClear} 
         lastUpdated={lastUpdated}
         templateSizes={TEMPLATE_SIZES}
@@ -1093,6 +1178,8 @@ function App() {
           onAddElement={handleAddElement} 
           onAddElements={handleAddElements}
           onAddGraphicPreset={handleAddGraphicPreset}
+          selectedElement={selectedElement}
+          onChange={handleChangeElement}
           bgColor={bgColor}
           onBgColorChange={setBgColor}
           backgroundImage={backgroundImage}
